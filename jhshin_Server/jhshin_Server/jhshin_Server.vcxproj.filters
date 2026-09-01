@@ -39,6 +39,9 @@
     <ClCompile Include="ConfigManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="SessionData.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RSDefine.h">
@@ -57,6 +60,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="ConfigManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionData.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

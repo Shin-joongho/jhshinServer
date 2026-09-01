@@ -1,20 +1,29 @@
 #include "SocketUtill.h"
 
-SOCKET SocketUtill::MakeSocket()
+bool SocketUtill::Initialize()
 {
     WSADATA WSAData;
-    SOCKET socket;
+
     int WSAStartupResult = WSAStartup( MAKEWORD( 2, 2 ), &WSAData );
     if( WSAStartupResult != 0 )
     {
-        return false;
+        return false;;
     }
+
+    return true;
+}
+
+SOCKET SocketUtill::MakeSocket()
+{
+    SOCKET socket;
 
     socket = WSASocket( AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED );
     if( socket == SOCKET_ERROR )
     {
-        return false;
+        return SOCKET_ERROR;
     }
+
+    return socket;
 }
 
 bool SocketUtill::SetOptions( SOCKET& socket, int OptionBit )
@@ -28,7 +37,7 @@ bool SocketUtill::SetOptions( SOCKET& socket, int OptionBit )
 
     if( OptionBit & 1 << eSocketOption_ReUseAddr )
     {
-        setsockopt( socket, SOL_SOCKET, TCP_NODELAY, (char*)&opt_val, sizeof( opt_val ) );
+        setsockopt( socket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt_val, sizeof( opt_val ) );
     }
 
     if( OptionBit & 1 << eSocketOption_Linger )

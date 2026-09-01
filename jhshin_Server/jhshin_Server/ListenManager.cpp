@@ -1,19 +1,15 @@
 #include "ListenManager.h"
 
-void ListenManager::Initalize()
+void ListenManager::Initalize( int SessionCount )
 {
-	m_Socket = SocketUtill::MakeSocket();
-	int OptionVal = 1 << eSocketOption_NoDelay + 1 << eSocketOption_ReUseAddr;
-
-	SocketUtill::SetOptions( m_Socket, OptionVal );
-
 	GUID guidAcceptEx = WSAID_ACCEPTEX;
 	DWORD bytes = 0;
 	WSAIoctl( m_Socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidAcceptEx, sizeof( guidAcceptEx ), &m_lpfnAcceptEx, sizeof( m_lpfnAcceptEx ), &bytes, nullptr, nullptr );
 
-	m_ListenHandle = CreateIoCompletionPort( INVALID_HANDLE_VALUE, nullptr, 0, 0 );
+	Init( 5 );
+	AddIOCP( m_Socket );
 
-	CreateIoCompletionPort( (HANDLE)m_Socket, m_ListenHandle, 0, 0 );
+	m_SessionPools.InitMemoryPool( SessionCount );
 }
 
 bool ListenManager::Listen()
@@ -37,7 +33,7 @@ bool ListenManager::Listen()
 	}
 
 	int AcceptCount = ConfigManager::This()->GetAcceptCount();
-	if( 0 <= AcceptCount )
+	if( 0 >= AcceptCount )
 	{
 		return false;
 	}
@@ -51,7 +47,7 @@ void ListenManager::Accept( int AcceptCount )
 
 	for( int i = 0; i < AcceptCount; ++i )
 	{
-		shared_ptr<AcceptObject> acceptObject = make_shared<AcceptObject>( SocketUtill::MakeSocket() );
+		shared_ptr<AcceptObject> acceptObject = make_shared<AcceptObject>( );
 		m_AcceptObjects.push_back( acceptObject );
 
 		Accept( acceptObject );
@@ -60,11 +56,25 @@ void ListenManager::Accept( int AcceptCount )
 
 void ListenManager::Accept( shared_ptr<AcceptObject>& acceptObject )
 {
-	acceptObject->SetSession() = createsession()
-	m_lpfnAcceptEx( m_Socket, acceptObject->GetSession()->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), static_cast<LPOVERLAPPED>( acceptObject.get() ) );
+	SessionData* session = PopSession();
+	if( session )
+	{
+		acceptObject->SetSession( session );
+		acceptObject->GetSession()->SetSocket( SocketUtill::MakeSocket() );
+		m_lpfnAcceptEx( m_Socket, acceptObject->GetSession()->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), static_cast<LPOVERLAPPED>( acceptObject.get() ) );
+	}
 }
 
 SessionData* ListenManager::PopSession()
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	return m_SessionPools.Pop();
+}
+
+void ListenManager::PushSession( SessionData* Session )
+{
+	if( Session )
+	{
+		Session->Reset();
+		m_SessionPools.Push( Session );
+	}
 }

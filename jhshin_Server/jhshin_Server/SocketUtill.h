@@ -20,6 +20,7 @@ enum eSocketOption
 class SocketUtill
 {
 public:
+	static bool Initialize();
 	static SOCKET MakeSocket();
 	static bool SetOptions( SOCKET& socket, int OptionBit );
 
@@ -39,7 +40,7 @@ public:
 
 	void SetSockAddr_In( sockaddr_in addr )
 	{
-		m_addr = m_addr;
+		m_addr = addr;
 		InetNtopA( AF_INET, &m_addr.sin_addr, m_IPBuffer, sizeof( m_IPBuffer ) );
 		m_Port = ntohs( m_addr.sin_port );
 	}

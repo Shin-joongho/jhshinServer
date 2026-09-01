@@ -1,8 +1,9 @@
-#pragma once
+﻿#pragma once
 
-#include "RSDefine.h"
 #include <mutex>
 #include <stack>
+
+#include "RSDefine.h"
 
 template<typename T>
 class MemoryPool
@@ -15,7 +16,7 @@ public:
 	void InitMemoryPool( int PoolSize );
 
 	T* Pop();
-	void Push( T* Object );
+	bool Push( T* Object );
 
 private:
 	mutex m_Lock;
@@ -79,17 +80,18 @@ inline T* MemoryPool<T>::Pop()
 }
 
 template<typename T>
-inline void MemoryPool<T>::Push( T* Object )
+inline bool MemoryPool<T>::Push( T* Object )
 {
+	bool Result = false;
 	lock_guard<mutex> lock( m_Lock );
 
-	// ���� üũ
+	// 범위 체크
 	if( &m_Storage[0] > Object || Object > &m_Storage[m_MaxSize - 1] )
 	{
-		return;
+		return Result;
 	}
 
-	// �ߺ� ��ȯ üũ
+	// 중복 반환 체크
 	int index = Object - &m_Storage[0];
 	if( 0 <= index && index < m_MaxSize )
 	{
@@ -101,7 +103,10 @@ inline void MemoryPool<T>::Push( T* Object )
 
 			m_Pools.push( Object );
 			++m_FreeCount;
+
+			Result = true;
 		}
 	}
 
+	return Result;
 }

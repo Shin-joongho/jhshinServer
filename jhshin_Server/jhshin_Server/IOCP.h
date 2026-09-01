@@ -1,9 +1,10 @@
 #pragma once
 #pragma comment(lib, "ws2_32")
-#include "RSDefine.h"
 #include <WinSock2.h>
 #include <thread>
 #include "SessionData.h"
+
+#include "RSDefine.h"
 
 enum class IOCP_TYPE
 {
@@ -18,7 +19,7 @@ class IOCPObject : public OVERLAPPED
 public:
 	friend class SessionData;
 
-	IOCPObject( SOCKET Socket ) : m_Session( nullptr ), m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
+	IOCPObject() : m_Session( nullptr ), m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
 	{
 
 	}
@@ -49,7 +50,7 @@ private:
 class AcceptObject : public IOCPObject
 {
 public:
-	AcceptObject( SOCKET socket ) : IOCPObject( socket )
+	AcceptObject()
 	{
 		SetType( IOCP_TYPE::IOCP_TYPE_ACCEPT );
 		Clear();
@@ -66,7 +67,7 @@ public:
 		GetAcceptExSockaddrs( m_OutputBuffer, 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, &pLocalAddr, &LocalLen, &pRemoteAddr, &RemoteLen );
 
 		SOCKADDR_IN RemoteSockAddr;
-		memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr), reinterpret_cast< SOCKADDR_IN* >( pRemoteAddr ), sizeof( SOCKADDR_IN ) );
+		memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr), reinterpret_cast< SOCKADDR_IN* >( pRemoteAddr ), RemoteLen );
 
 		SessionData* thisSesssion = GetSession();
 		if( thisSesssion )
@@ -94,11 +95,21 @@ private:
 class IOCP
 {
 public:
+	IOCP();
 	IOCP( int iThreadCount );
 	~IOCP();
 
-	void Init();
-	static void Worker();
+	void Init( int iThreadCount );
+	void AddIOCP( SOCKET socket );
+	static void Worker( IOCP* thisIOCP );
+
+	SOCKET GetSocket() { return m_Socket;  }
+	HANDLE GetIOCPHandle() { return m_IOCPHandle;  }
+
+	void Join();
+	
+protected:
+	SOCKET m_Socket;
 
 private:
 	HANDLE m_IOCPHandle;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RSDefine.h"
 #include "SocketUtill.h"
+#include "RSDefine.h"
 
 class SessionData
 {
@@ -17,6 +17,8 @@ public:
 	{
 		m_Socket = Socket;
 	}
+	
+	void Reset();
 
 private:
 	SOCKET m_Socket;

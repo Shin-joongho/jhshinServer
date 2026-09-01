@@ -4,7 +4,7 @@
 #include "IOCP.h"
 #include "MemoryPool.h"
 
-class ListenManager
+class ListenManager : public IOCP
 {
 public:
 	ListenManager() {}
@@ -20,20 +20,18 @@ public:
 		return m_ListenManager;
 	}
 
-	void Initalize();
+	void Initalize( int SessionCount );
 	bool Listen();
 
 	void Accept( int AcceptCount );
 	void Accept( shared_ptr<AcceptObject>& AcceptObj );
 
 	SessionData* PopSession();
+	void PushSession( SessionData* Session );
 
 private:
 	inline static ListenManager* m_ListenManager = nullptr;
-	SOCKET m_Socket;
 	LPFN_ACCEPTEX m_lpfnAcceptEx = nullptr;
-	HANDLE m_ListenHandle;
 	vector<shared_ptr<AcceptObject>> m_AcceptObjects;
 	MemoryPool<SessionData> m_SessionPools;
 };
-

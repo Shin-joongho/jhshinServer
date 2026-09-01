@@ -1,0 +1,72 @@
+## ─────────────────────────────────────────
+##  Visual Studio / MSBuild 빌드 산출물
+## ─────────────────────────────────────────
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bin/
+obj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+## MSBuild 중간 파일
+*.tlog
+*.obj
+*.o
+*.pch
+*.ipch
+*.idb
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.tli
+*.tlh
+*.res
+*.rsp
+*.lastbuildstate
+*.unsuccessfulbuild
+*.CppClean.log
+*.FileListAbsolute.txt
+
+## 빌드 결과물
+*.exe
+*.dll
+
+## ─────────────────────────────────────────
+##  Visual Studio 사용자/IDE 설정 (개인 환경)
+## ─────────────────────────────────────────
+.vs/
+*.vcxproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.opensdf
+*.sdf
+*.cachefile
+
+## ReSharper / Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+.idea/
+
+## ─────────────────────────────────────────
+##  기타
+## ─────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.bak
+*.tmp
+*~
