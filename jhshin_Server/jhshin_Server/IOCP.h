@@ -3,8 +3,9 @@
 #include "RSDefine.h"
 #include <WinSock2.h>
 #include <thread>
+#include "SessionData.h"
 
-enum IOCP_TYPE
+enum class IOCP_TYPE
 {
 	IOCP_TYPE_NONE,
 	IOCP_TYPE_ACCEPT,
@@ -15,7 +16,9 @@ enum IOCP_TYPE
 class IOCPObject : public OVERLAPPED
 {
 public:
-	IOCPObject( SOCKET Socket ) : m_Socket( Socket ), m_IocpType( IOCP_TYPE_NONE )
+	friend class SessionData;
+
+	IOCPObject( SOCKET Socket ) : m_Session( nullptr ), m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
 	{
 
 	}
@@ -27,9 +30,19 @@ public:
 		m_IocpType = iocpType;
 	}
 	IOCP_TYPE GetType() { return m_IocpType; }
-	SOCKET GetSocket() { return m_Socket; }
+	SessionData* GetSession() { return m_Session; }
+	void SetSession( SessionData* Session )
+	{
+		m_Session = Session;
+	}
+	
+	void Clear()
+	{
+		m_Session = nullptr;
+	}
+
 private:
-	SOCKET m_Socket;
+	SessionData* m_Session;
 	IOCP_TYPE m_IocpType;
 };
 
@@ -38,19 +51,34 @@ class AcceptObject : public IOCPObject
 public:
 	AcceptObject( SOCKET socket ) : IOCPObject( socket )
 	{
-		SetType( IOCP_TYPE_ACCEPT );
-		m_ByteRecv = 0;
-		memset( m_OutputBuffer, 0, sizeof( m_OutputBuffer ) );
+		SetType( IOCP_TYPE::IOCP_TYPE_ACCEPT );
+		Clear();
 	}
 	virtual ~AcceptObject() {}
 
 	virtual void Execute() override
 	{
+		sockaddr* pLocalAddr = nullptr;
+		sockaddr* pRemoteAddr = nullptr;
+		int LocalLen = 0;
+		int RemoteLen = 0;
 
+		GetAcceptExSockaddrs( m_OutputBuffer, 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, &pLocalAddr, &LocalLen, &pRemoteAddr, &RemoteLen );
+
+		SOCKADDR_IN RemoteSockAddr;
+		memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr), reinterpret_cast< SOCKADDR_IN* >( pRemoteAddr ), sizeof( SOCKADDR_IN ) );
+
+		SessionData* thisSesssion = GetSession();
+		if( thisSesssion )
+		{
+			thisSesssion->SetNetAddr( RemoteSockAddr );
+		}
+		
 	}
 
 	void Clear()
 	{
+		this->IOCPObject::Clear();
 		m_ByteRecv = 0;
 		memset( m_OutputBuffer, 0, sizeof( m_OutputBuffer ) );
 	}
@@ -70,7 +98,7 @@ public:
 	~IOCP();
 
 	void Init();
-	void Worker();
+	static void Worker();
 
 private:
 	HANDLE m_IOCPHandle;

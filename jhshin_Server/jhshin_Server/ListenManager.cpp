@@ -9,7 +9,7 @@ void ListenManager::Initalize()
 
 	GUID guidAcceptEx = WSAID_ACCEPTEX;
 	DWORD bytes = 0;
-	WSAIoctl( m_Socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidAcceptEx, sizeof( guidAcceptEx ), &lpfnAcceptEx, sizeof( lpfnAcceptEx ), &bytes, nullptr, nullptr );
+	WSAIoctl( m_Socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidAcceptEx, sizeof( guidAcceptEx ), &m_lpfnAcceptEx, sizeof( m_lpfnAcceptEx ), &bytes, nullptr, nullptr );
 
 	m_ListenHandle = CreateIoCompletionPort( INVALID_HANDLE_VALUE, nullptr, 0, 0 );
 
@@ -60,7 +60,11 @@ void ListenManager::Accept( int AcceptCount )
 
 void ListenManager::Accept( shared_ptr<AcceptObject>& acceptObject )
 {
-	// ººº«¿ª ≥÷æÓº≠ 
-	// acceptObject->session = createsession()
-	m_lpfnAcceptEx( m_Socket, acceptObject->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), (LPOVERLAPPED)&acceptObject );
+	acceptObject->SetSession() = createsession()
+	m_lpfnAcceptEx( m_Socket, acceptObject->GetSession()->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), static_cast<LPOVERLAPPED>( acceptObject.get() ) );
+}
+
+SessionData* ListenManager::PopSession()
+{
+	// TODO: Ïó¨Í∏∞Ïóê return Î¨∏ÏùÑ ÏÇΩÏûÖÌï©ÎãàÎã§.
 }

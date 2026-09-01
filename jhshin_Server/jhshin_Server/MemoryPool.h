@@ -8,8 +8,11 @@ template<typename T>
 class MemoryPool
 {
 public:
+	MemoryPool();
 	MemoryPool( int PoolSize );
 	~MemoryPool() {}
+
+	void InitMemoryPool( int PoolSize );
 
 	T* Pop();
 	void Push( T* Object );
@@ -24,7 +27,18 @@ private:
 };
 
 template<typename T>
+inline MemoryPool<T>::MemoryPool()
+{
+}
+
+template<typename T>
 inline MemoryPool<T>::MemoryPool( int PoolSize )
+{
+	InitMemoryPool( PoolSize );
+}
+
+template<typename T>
+inline void MemoryPool<T>::InitMemoryPool( int PoolSize )
 {
 	m_MaxSize = PoolSize;
 	m_FreeCount = PoolSize;
