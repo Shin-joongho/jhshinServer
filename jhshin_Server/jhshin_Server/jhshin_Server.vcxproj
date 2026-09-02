@@ -133,17 +133,21 @@
     <ClCompile Include="IOCP.cpp" />
     <ClCompile Include="jhshin_Server.cpp" />
     <ClCompile Include="ListenManager.cpp" />
-    <ClCompile Include="MemoryPool.cpp" />
+    <ClCompile Include="ObjectPool.cpp" />
+    <ClCompile Include="ServiceManager.cpp" />
     <ClCompile Include="SessionData.cpp" />
+    <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="SocketUtill.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="IOCP.h" />
     <ClInclude Include="ListenManager.h" />
-    <ClInclude Include="MemoryPool.h" />
+    <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="RSDefine.h" />
+    <ClInclude Include="ServiceManager.h" />
     <ClInclude Include="SessionData.h" />
+    <ClInclude Include="SessionManager.h" />
     <ClInclude Include="SocketUtill.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

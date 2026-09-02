@@ -13,19 +13,19 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="MemoryPool">
-      <UniqueIdentifier>{6449f716-75b9-4722-a0bc-5b9d4262ab05}</UniqueIdentifier>
-    </Filter>
     <Filter Include="IOCP">
       <UniqueIdentifier>{4b1d7a89-dd9a-42ed-8207-5b1aaf0c543c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pool">
+      <UniqueIdentifier>{6449f716-75b9-4722-a0bc-5b9d4262ab05}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jhshin_Server.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="MemoryPool.cpp">
-      <Filter>MemoryPool</Filter>
+    <ClCompile Include="ObjectPool.cpp">
+      <Filter>Pool</Filter>
     </ClCompile>
     <ClCompile Include="IOCP.cpp">
       <Filter>IOCP</Filter>
@@ -42,13 +42,19 @@
     <ClCompile Include="SessionData.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="SessionManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ServiceManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RSDefine.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryPool.h">
-      <Filter>MemoryPool</Filter>
+    <ClInclude Include="ObjectPool.h">
+      <Filter>Pool</Filter>
     </ClInclude>
     <ClInclude Include="IOCP.h">
       <Filter>IOCP</Filter>
@@ -63,6 +69,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="SessionData.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ServiceManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
