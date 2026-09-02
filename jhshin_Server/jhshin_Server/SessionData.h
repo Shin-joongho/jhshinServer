@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SocketUtill.h"
+#include "IOCP.h"
 #include "RSDefine.h"
 
 class SessionData
@@ -23,5 +24,7 @@ public:
 private:
 	SOCKET m_Socket;
 	NetAddress m_NetAddress;
+
+	RecvObject* m_Recv;
 };
 

@@ -33,14 +33,6 @@ void IOCP::Init( int iThreadCount )
 
 	m_IOCPHandle = CreateIoCompletionPort( INVALID_HANDLE_VALUE, NULL, 0, 0 );
 
-	for( int i = 0; i < m_iThreadCount; ++i )
-	{
-		thread* tr = new thread( Worker, this );
-		m_vecThread.push_back( tr );
-	}
-
-	Join();
-
 	return;
 }
 
@@ -49,6 +41,17 @@ void IOCP::AddIOCP( SOCKET socket )
 	CreateIoCompletionPort( (HANDLE)socket, m_IOCPHandle, 0, 0 );
 
 	return;;
+}
+
+void IOCP::Start()
+{
+	for( int i = 0; i < m_iThreadCount; ++i )
+	{
+		thread* tr = new thread( Worker, this );
+		m_vecThread.push_back( tr );
+	}
+
+	Join();
 }
 
 void IOCP::Worker( IOCP* thisIOCP )
@@ -61,9 +64,30 @@ void IOCP::Worker( IOCP* thisIOCP )
 		lptransferByte = 0;
 		iocpObject = nullptr;
 
-		if( GetQueuedCompletionStatus( thisIOCP->GetIOCPHandle(), &lptransferByte, &key, static_cast<LPOVERLAPPED*>( &iocpObject ), INFINITE ) )
+		if( GetQueuedCompletionStatus( thisIOCP->GetIOCPHandle(), &lptransferByte, &key, (LPOVERLAPPED*)&iocpObject, INFINITE ) )
 		{
+			if( lptransferByte > 0 )
+			{
+				// 정상 처리
+				iocpObject->Execute();
+			}
+			else if( lptransferByte == 0 )
+			{
+				// 정상 종료
+			}
+			else
+			{
+				DWORD errCode = WSAGetLastError();
+				switch( errCode )
+				{
+				case WAIT_TIMEOUT:
+					return;
+				default:
 
+					break;
+				}
+				return;
+			}
 		}
 	}
 }
@@ -76,4 +100,34 @@ void IOCP::Join()
 			t->join();
 	}
 	m_vecThread.clear();
+}
+
+void AcceptObject::Execute()
+{
+	sockaddr* pLocalAddr = nullptr;
+	sockaddr* pRemoteAddr = nullptr;
+	int LocalLen = 0;
+	int RemoteLen = 0;
+
+	GetAcceptExSockaddrs( m_OutputBuffer, 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, &pLocalAddr, &LocalLen, &pRemoteAddr, &RemoteLen );
+
+	SOCKADDR_IN RemoteSockAddr;
+	memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr ), reinterpret_cast<SOCKADDR_IN*>( pRemoteAddr ), RemoteLen );
+
+	SessionData* thisSesssion = GetSession();
+	if( thisSesssion )
+	{
+		thisSesssion->SetNetAddr( RemoteSockAddr );
+	}
+
+	// 메인 IOCP에 연결
+	ServiceManager::This()->AddIOCP( thisSesssion );
+}
+
+
+void AcceptObject::Clear()
+{
+	m_Session = nullptr;
+	m_ByteRecv = 0;
+	memset( m_OutputBuffer, 0, sizeof( m_OutputBuffer ) );
 }

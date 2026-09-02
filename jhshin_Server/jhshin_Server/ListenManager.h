@@ -2,14 +2,11 @@
 #include "SocketUtill.h"
 #include "ConfigManager.h"
 #include "IOCP.h"
-#include "MemoryPool.h"
+#include "SessionManager.h"
 
-class ListenManager : public IOCP
+class ListenManager
 {
 public:
-	ListenManager() {}
-	~ListenManager() {}
-
 	static ListenManager* This()
 	{
 		if( nullptr == m_ListenManager )
@@ -20,18 +17,20 @@ public:
 		return m_ListenManager;
 	}
 
-	void Initalize( int SessionCount );
+	ListenManager() {}
+	~ListenManager() {}
+
+
+	void Initalize( int SessionCount, int ThreadCount );
 	bool Listen();
 
 	void Accept( int AcceptCount );
-	void Accept( shared_ptr<AcceptObject>& AcceptObj );
-
-	SessionData* PopSession();
-	void PushSession( SessionData* Session );
+	void Accept( AcceptObject* AcceptObj );
 
 private:
 	inline static ListenManager* m_ListenManager = nullptr;
 	LPFN_ACCEPTEX m_lpfnAcceptEx = nullptr;
-	vector<shared_ptr<AcceptObject>> m_AcceptObjects;
-	MemoryPool<SessionData> m_SessionPools;
+	vector<AcceptObject*> m_AcceptObjects;
+
+	IOCP m_iocp;
 };

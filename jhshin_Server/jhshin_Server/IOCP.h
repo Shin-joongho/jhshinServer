@@ -2,7 +2,9 @@
 #pragma comment(lib, "ws2_32")
 #include <WinSock2.h>
 #include <thread>
-#include "SessionData.h"
+
+#include "SessionManager.h"
+#include "ServiceManager.h"
 
 #include "RSDefine.h"
 
@@ -19,7 +21,7 @@ class IOCPObject : public OVERLAPPED
 public:
 	friend class SessionData;
 
-	IOCPObject() : m_Session( nullptr ), m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
+	IOCPObject() : m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
 	{
 
 	}
@@ -31,19 +33,8 @@ public:
 		m_IocpType = iocpType;
 	}
 	IOCP_TYPE GetType() { return m_IocpType; }
-	SessionData* GetSession() { return m_Session; }
-	void SetSession( SessionData* Session )
-	{
-		m_Session = Session;
-	}
-	
-	void Clear()
-	{
-		m_Session = nullptr;
-	}
 
 private:
-	SessionData* m_Session;
 	IOCP_TYPE m_IocpType;
 };
 
@@ -57,38 +48,35 @@ public:
 	}
 	virtual ~AcceptObject() {}
 
-	virtual void Execute() override
-	{
-		sockaddr* pLocalAddr = nullptr;
-		sockaddr* pRemoteAddr = nullptr;
-		int LocalLen = 0;
-		int RemoteLen = 0;
+	virtual void Execute() override;
+	void Clear();
 
-		GetAcceptExSockaddrs( m_OutputBuffer, 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, &pLocalAddr, &LocalLen, &pRemoteAddr, &RemoteLen );
-
-		SOCKADDR_IN RemoteSockAddr;
-		memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr), reinterpret_cast< SOCKADDR_IN* >( pRemoteAddr ), RemoteLen );
-
-		SessionData* thisSesssion = GetSession();
-		if( thisSesssion )
-		{
-			thisSesssion->SetNetAddr( RemoteSockAddr );
-		}
-		
-	}
-
-	void Clear()
-	{
-		this->IOCPObject::Clear();
-		m_ByteRecv = 0;
-		memset( m_OutputBuffer, 0, sizeof( m_OutputBuffer ) );
-	}
+	SessionData* GetSession() { return m_Session; }
+	void SetSession( SessionData* session ) { m_Session = session; }
 
 	char* GetBuffer() { return m_OutputBuffer; }
 	DWORD* GetByteRecv() { return &m_ByteRecv;  }
 private:
+	SessionData* m_Session;
 	char m_OutputBuffer[256];
 	DWORD m_ByteRecv;
+};
+
+class RecvObject : public IOCPObject
+{
+public:
+	RecvObject()
+	{
+
+	}
+	virtual ~RecvObject() {}
+
+	virtual void Execute() override;
+	void Clear();
+
+private:
+	WSABUF m_wsabuf;
+	char m_RecvBuffer[4056];
 };
 
 
@@ -101,6 +89,7 @@ public:
 
 	void Init( int iThreadCount );
 	void AddIOCP( SOCKET socket );
+	void Start();
 	static void Worker( IOCP* thisIOCP );
 
 	SOCKET GetSocket() { return m_Socket;  }
