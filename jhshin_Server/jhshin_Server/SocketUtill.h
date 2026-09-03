@@ -49,6 +49,13 @@ public:
 		return m_addr;
 	}
 
+	void Clear()
+	{
+		m_addr = {};
+		memset( m_IPBuffer, 0, sizeof( m_IPBuffer ) );
+		m_Port = 0;
+	}
+
 private:
 	sockaddr_in m_addr = {};
 	char m_IPBuffer[INET_ADDRSTRLEN];

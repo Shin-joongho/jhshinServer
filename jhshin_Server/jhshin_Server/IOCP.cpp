@@ -50,8 +50,6 @@ void IOCP::Start()
 		thread* tr = new thread( Worker, this );
 		m_vecThread.push_back( tr );
 	}
-
-	Join();
 }
 
 void IOCP::Worker( IOCP* thisIOCP )
@@ -69,7 +67,7 @@ void IOCP::Worker( IOCP* thisIOCP )
 			if( lptransferByte > 0 )
 			{
 				// 정상 처리
-				iocpObject->Execute();
+				iocpObject->Execute( lptransferByte );
 			}
 			else if( lptransferByte == 0 )
 			{
@@ -102,7 +100,7 @@ void IOCP::Join()
 	m_vecThread.clear();
 }
 
-void AcceptObject::Execute()
+void AcceptObject::Execute( int transferByte )
 {
 	sockaddr* pLocalAddr = nullptr;
 	sockaddr* pRemoteAddr = nullptr;
@@ -114,16 +112,32 @@ void AcceptObject::Execute()
 	SOCKADDR_IN RemoteSockAddr;
 	memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr ), reinterpret_cast<SOCKADDR_IN*>( pRemoteAddr ), RemoteLen );
 
-	SessionData* thisSesssion = GetSession();
-	if( thisSesssion )
+	if( m_Session )
 	{
-		thisSesssion->SetNetAddr( RemoteSockAddr );
+		m_Session->SetNetAddr( RemoteSockAddr );
 	}
 
 	// 메인 IOCP에 연결
-	ServiceManager::This()->AddIOCP( thisSesssion );
+	ServiceManager::This()->AddIOCP( m_Session );
+	m_Session->RecvStart();
+
+	m_Session = nullptr;
+
+	ListenManager::This()->Accept( this );
 }
 
+
+void RecvObject::Initalize( SessionData* session )
+{
+	m_wsabuf.buf = m_RecvBuffer;
+	m_wsabuf.len = sizeof( m_RecvBuffer );
+	m_Session = session;
+}
+
+void RecvObject::Execute( int transferByte )
+{
+	// 패킷이 다 왔는지 확인
+}
 
 void AcceptObject::Clear()
 {

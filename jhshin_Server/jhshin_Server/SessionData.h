@@ -7,7 +7,10 @@
 class SessionData
 {
 public:
-	SessionData() {}
+	SessionData()
+	{
+		Reset();
+	}
 	~SessionData() {}
 
 	NetAddress& GetNetAddr() { return m_NetAddress; }
@@ -18,7 +21,11 @@ public:
 	{
 		m_Socket = Socket;
 	}
+
+	RecvObject* GetRecvObject() { return m_Recv;  }
 	
+	bool RecvStart();
+
 	void Reset();
 
 private:

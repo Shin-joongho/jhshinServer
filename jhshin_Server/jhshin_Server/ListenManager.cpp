@@ -21,15 +21,9 @@ bool ListenManager::Listen()
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons( ServerPort );
 
-	if( false == bind( m_iocp.GetSocket(), (sockaddr*)&addr, sizeof( addr ) ) )
-	{
-		return false;
-	}
+	bind( m_iocp.GetSocket(), (sockaddr*)&addr, sizeof( addr ) );
 
-	if( false == listen( m_iocp.GetSocket(), SOMAXCONN ) )
-	{
-		return false;
-	}
+	listen( m_iocp.GetSocket(), SOMAXCONN );
 
 	int AcceptCount = ConfigManager::This()->GetAcceptCount();
 	if( 0 >= AcceptCount )

@@ -5,6 +5,7 @@
 
 #include "SessionManager.h"
 #include "ServiceManager.h"
+#include "ListenManager.h"
 
 #include "RSDefine.h"
 
@@ -27,7 +28,7 @@ public:
 	}
 	virtual ~IOCPObject() {}
 
-	virtual void Execute() abstract;
+	virtual void Execute( int transferByte ) abstract;
 	void SetType( IOCP_TYPE iocpType )
 	{
 		m_IocpType = iocpType;
@@ -48,7 +49,7 @@ public:
 	}
 	virtual ~AcceptObject() {}
 
-	virtual void Execute() override;
+	virtual void Execute( int transferByte ) override;
 	void Clear();
 
 	SessionData* GetSession() { return m_Session; }
@@ -65,18 +66,21 @@ private:
 class RecvObject : public IOCPObject
 {
 public:
-	RecvObject()
-	{
-
-	}
+	RecvObject() {}
 	virtual ~RecvObject() {}
 
-	virtual void Execute() override;
+	void Initalize( SessionData* session );
+
+	virtual void Execute( int transferByte ) override;
 	void Clear();
+
+	WSABUF& GetWSABUF() { return m_wsabuf;  }
+	char* GetRecvBuffer() { return m_RecvBuffer;  }
 
 private:
 	WSABUF m_wsabuf;
 	char m_RecvBuffer[4056];
+	SessionData* m_Session = nullptr;
 };
 
 
