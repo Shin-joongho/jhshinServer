@@ -1,5 +1,7 @@
 #include "SessionData.h"
 
+#include "IOCP.h"
+
 void SessionData::SetNetAddr( sockaddr_in& RemoteSockAddr )
 {
 	m_NetAddress.SetSockAddr_In( RemoteSockAddr );
@@ -8,7 +10,8 @@ void SessionData::SetNetAddr( sockaddr_in& RemoteSockAddr )
 bool SessionData::RecvStart()
 {
 	DWORD flag = 0;
-	int Result = WSARecv( m_Socket, &m_Recv->GetWSABUF(), 0, NULL, &flag, (LPWSAOVERLAPPED)&m_Recv, NULL );
+	m_Recv.Clear();
+	int Result = WSARecv( m_Socket, &m_Recv.GetWSABUF(), 1, NULL, &flag, static_cast<LPWSAOVERLAPPED>( &m_Recv ) , NULL);
 	if( Result == SOCKET_ERROR )
 	{
 		DWORD error = WSAGetLastError();
@@ -24,7 +27,7 @@ bool SessionData::RecvStart()
 
 void SessionData::Reset()
 {
-	m_Recv->Initalize( this );
+	m_Recv.Initalize( this );
 	m_Socket = INVALID_SOCKET;
 	m_NetAddress.Clear();
 }

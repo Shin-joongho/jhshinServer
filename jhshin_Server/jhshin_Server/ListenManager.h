@@ -1,8 +1,8 @@
 #pragma once
-#include "SocketUtill.h"
-#include "ConfigManager.h"
+
 #include "IOCP.h"
-#include "SessionManager.h"
+#include "RSDefine.h"
+#include "SocketUtill.h"
 
 class ListenManager
 {
@@ -21,11 +21,15 @@ public:
 	~ListenManager() {}
 
 
-	void Initalize( int SessionCount, int ThreadCount );
+	void Initalize( int ThreadCount );
 	bool Listen();
 
-	void Accept( int AcceptCount );
-	void Accept( AcceptObject* AcceptObj );
+	void Accept( int acceptCount );
+	void Accept( AcceptObject* acceptObject, bool popSession = true );
+
+	void Error( AcceptObject* acceptObject );
+
+	IOCP& GetIOCP() { return m_iocp; }
 
 private:
 	inline static ListenManager* m_ListenManager = nullptr;

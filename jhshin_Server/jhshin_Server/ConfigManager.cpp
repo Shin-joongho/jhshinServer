@@ -1,5 +1,10 @@
 #include "ConfigManager.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+
 ConfigManager::ConfigManager()
     : m_wPath( L"" ), m_ServerPort( 0 )
 {

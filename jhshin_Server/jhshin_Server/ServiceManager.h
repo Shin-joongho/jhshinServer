@@ -1,7 +1,10 @@
 #pragma once
 
 #include "IOCP.h"
-#include "ObjectPool.h"
+#include "RSDefine.h"
+#include "SocketUtill.h"
+
+class SessionData;
 
 class ServiceManager
 {
@@ -19,7 +22,7 @@ public:
 	ServiceManager() {}
 	~ServiceManager() {}
 
-	void Initalize( int iThreadCount );
+	void Initalize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount );
 	void Start();
 
 	void AddIOCP( SessionData* session );
@@ -27,7 +30,13 @@ public:
 	bool InsertUserSession( SessionData* session );
 	void EraseUserSession( SessionData* session );
 
-public:
+	IOCP& GetIOCP() { return m_iocp; }
+
+	void Join();
+
+	void CloseSession( SessionData* session );
+
+private:
 	inline static ServiceManager* m_ServiceManager;
 
 	IOCP m_iocp;

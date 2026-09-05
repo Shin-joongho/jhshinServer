@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Windows.h>
-#include <string>
-
 #include "RSDefine.h"
 
 class ConfigManager

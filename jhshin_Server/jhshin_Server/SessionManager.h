@@ -2,7 +2,7 @@
 
 #include "ObjectPool.h"
 #include "SessionData.h"
-#include <unordered_map>
+#include "ListenManager.h"
 
 class SessionManager
 {
@@ -25,9 +25,14 @@ public:
 	SessionData* PopSession();
 	void PushSession( SessionData* session );
 
+	void InsertWait( AcceptObject* acceptObject );
+
 private:
 	inline static SessionManager* m_SessionManager;
-
 	ObjectPool<SessionData> m_SessionPools;
+
+	// ´ë±â Å¥
+	mutex m_WaitLock;
+	queue<AcceptObject*> m_WaitQueue;
 };
 

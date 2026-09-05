@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-#include <mutex>
-#include <stack>
-
 #include "RSDefine.h"
 
 template<typename T>
@@ -23,8 +20,8 @@ private:
 	vector<T> m_Storage;
 	stack<T*> m_Pools;
 	vector<bool> m_IsUse;
-	int m_FreeCount;
-	int m_MaxSize;
+	int m_FreeCount = 0;
+	int m_MaxSize = 0;
 };
 
 template<typename T>
@@ -41,6 +38,11 @@ inline ObjectPool<T>::ObjectPool( int PoolSize )
 template<typename T>
 inline void ObjectPool<T>::InitObjectPool( int PoolSize )
 {
+	if( 0 < m_MaxSize )
+	{
+		return;
+	}
+
 	m_MaxSize = PoolSize;
 	m_FreeCount = PoolSize;
 	m_Storage.resize( PoolSize );
@@ -50,6 +52,7 @@ inline void ObjectPool<T>::InitObjectPool( int PoolSize )
 	{
 		m_Pools.push( &m_Storage[i] );
 	}
+
 }
 
 template<typename T>

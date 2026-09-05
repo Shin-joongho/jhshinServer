@@ -28,6 +28,7 @@ SOCKET SocketUtill::MakeSocket()
 
 bool SocketUtill::SetOptions( SOCKET& socket, int OptionBit )
 {
+    bool Result = true;
     bool opt_val = true;
 
     if( OptionBit & 1 << eSocketOption_NoDelay )
@@ -52,4 +53,6 @@ bool SocketUtill::SetOptions( SOCKET& socket, int OptionBit )
     {
         setsockopt( socket, SOL_SOCKET, SO_KEEPALIVE, (char*)&opt_val, sizeof( opt_val ) );
     }
+
+    return Result;
 }

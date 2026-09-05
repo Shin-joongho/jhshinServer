@@ -1,6 +1,11 @@
 #include "ListenManager.h"
 
-void ListenManager::Initalize( int SessionCount, int ThreadCount )
+#include "ConfigManager.h"
+#include "SessionData.h"
+#include "SessionManager.h"
+#include "SocketUtill.h"
+
+void ListenManager::Initalize( int ThreadCount )
 {
 	m_iocp.Init( ThreadCount );
 
@@ -13,8 +18,9 @@ void ListenManager::Initalize( int SessionCount, int ThreadCount )
 
 bool ListenManager::Listen()
 {
-	int ServerPort = ConfigManager::This()->GetServerPort();
-	bool bResult = 0;
+	//int ServerPort = ConfigManager::This()->GetServerPort();
+	int ServerPort = 27130;
+	bool bResult = true;
 
 	sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
@@ -25,20 +31,19 @@ bool ListenManager::Listen()
 
 	listen( m_iocp.GetSocket(), SOMAXCONN );
 
-	int AcceptCount = ConfigManager::This()->GetAcceptCount();
-	if( 0 >= AcceptCount )
-	{
-		return false;
-	}
-
-	Accept( AcceptCount );
+	return bResult;
 }
 
-void ListenManager::Accept( int AcceptCount )
+void ListenManager::Accept( int acceptCount )
 {
-	m_AcceptObjects.reserve( AcceptCount );
+	if( 0 >= acceptCount )
+	{
+		return;
+	}
 
-	for( int i = 0; i < AcceptCount; ++i )
+	m_AcceptObjects.reserve( acceptCount );
+
+	for( int i = 0; i < acceptCount; ++i )
 	{
 		AcceptObject* acceptObject = new AcceptObject();
 		m_AcceptObjects.push_back( acceptObject );
@@ -49,13 +54,43 @@ void ListenManager::Accept( int AcceptCount )
 	m_iocp.Start();
 }
 
-void ListenManager::Accept( AcceptObject* acceptObject )
+void ListenManager::Accept( AcceptObject* acceptObject, bool popSession )
 {
-	SessionData* session = SessionManager::This()->PopSession();
+	SessionData* session = acceptObject->GetSession();
+
+	if( popSession )
+	{
+		session = SessionManager::This()->PopSession();
+		acceptObject->SetSession( session );
+	}
+
 	if( session )
 	{
-		acceptObject->SetSession( session );
 		acceptObject->GetSession()->SetSocket( SocketUtill::MakeSocket() );
 		m_lpfnAcceptEx( m_iocp.GetSocket(), acceptObject->GetSession()->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), static_cast<LPOVERLAPPED>( acceptObject ) );
+
 	}
+	else
+	{
+		SessionManager::This()->InsertWait( acceptObject );
+		// 세션 부족
+	}
+	
+}
+
+void ListenManager::Error( AcceptObject* acceptObject )
+{
+	if( nullptr == acceptObject )
+	{
+		return;
+	}
+
+	if( acceptObject->GetSession() )
+	{
+		closesocket( acceptObject->GetSession()->GetSocket() );
+	}
+
+	SessionManager::This()->PushSession( acceptObject->GetSession() );
+	acceptObject->Clear();
+	Accept( acceptObject );
 }

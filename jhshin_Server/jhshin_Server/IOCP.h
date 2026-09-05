@@ -1,13 +1,9 @@
 #pragma once
-#pragma comment(lib, "ws2_32")
-#include <WinSock2.h>
-#include <thread>
-
-#include "SessionManager.h"
-#include "ServiceManager.h"
-#include "ListenManager.h"
 
 #include "RSDefine.h"
+#include "SocketUtill.h"
+
+class SessionData;
 
 enum class IOCP_TYPE
 {
@@ -20,8 +16,6 @@ enum class IOCP_TYPE
 class IOCPObject : public OVERLAPPED
 {
 public:
-	friend class SessionData;
-
 	IOCPObject() : m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
 	{
 
@@ -35,8 +29,15 @@ public:
 	}
 	IOCP_TYPE GetType() { return m_IocpType; }
 
+	SessionData* GetSession() { return m_Session; }
+	void SetSession( SessionData* session ) { m_Session = session; }
+
+protected:
+	SessionData* m_Session;
+
 private:
 	IOCP_TYPE m_IocpType;
+	
 };
 
 class AcceptObject : public IOCPObject
@@ -52,13 +53,10 @@ public:
 	virtual void Execute( int transferByte ) override;
 	void Clear();
 
-	SessionData* GetSession() { return m_Session; }
-	void SetSession( SessionData* session ) { m_Session = session; }
-
 	char* GetBuffer() { return m_OutputBuffer; }
 	DWORD* GetByteRecv() { return &m_ByteRecv;  }
+
 private:
-	SessionData* m_Session;
 	char m_OutputBuffer[256];
 	DWORD m_ByteRecv;
 };
@@ -66,7 +64,11 @@ private:
 class RecvObject : public IOCPObject
 {
 public:
-	RecvObject() {}
+	RecvObject() 
+	{
+		SetType( IOCP_TYPE::IOCP_TYPE_RECV );
+		Clear();
+	}
 	virtual ~RecvObject() {}
 
 	void Initalize( SessionData* session );
@@ -80,7 +82,6 @@ public:
 private:
 	WSABUF m_wsabuf;
 	char m_RecvBuffer[4056];
-	SessionData* m_Session = nullptr;
 };
 
 

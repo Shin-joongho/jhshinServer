@@ -1,13 +1,15 @@
 #pragma once
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 
 #include <WinSock2.h>
-#include <map>
 #include <ws2tcpip.h>
 #include <mswsock.h>
 
 #pragma comment(lib, "ws2_32")
+#pragma comment(lib, "mswsock")
 
 enum eSocketOption
 {

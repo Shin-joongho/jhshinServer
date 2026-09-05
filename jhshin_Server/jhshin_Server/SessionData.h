@@ -2,7 +2,6 @@
 
 #include "SocketUtill.h"
 #include "IOCP.h"
-#include "RSDefine.h"
 
 class SessionData
 {
@@ -22,7 +21,7 @@ public:
 		m_Socket = Socket;
 	}
 
-	RecvObject* GetRecvObject() { return m_Recv;  }
+	RecvObject& GetRecvObject() { return m_Recv;  }
 	
 	bool RecvStart();
 
@@ -32,6 +31,6 @@ private:
 	SOCKET m_Socket;
 	NetAddress m_NetAddress;
 
-	RecvObject* m_Recv;
+	RecvObject m_Recv;
 };
 
