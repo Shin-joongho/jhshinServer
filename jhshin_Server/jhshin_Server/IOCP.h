@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include "RSDefine.h"
 #include "SocketUtill.h"
+#include "Buffer.h"
 
 class SessionData;
 
@@ -18,7 +19,7 @@ class IOCPObject : public OVERLAPPED
 public:
 	IOCPObject() : m_IocpType( IOCP_TYPE::IOCP_TYPE_NONE )
 	{
-
+		m_Session = nullptr;
 	}
 	virtual ~IOCPObject() {}
 
@@ -29,11 +30,13 @@ public:
 	}
 	IOCP_TYPE GetType() { return m_IocpType; }
 
-	SessionData* GetSession() { return m_Session; }
-	void SetSession( SessionData* session ) { m_Session = session; }
+	SessionDataRef GetSession() { return m_Session; }
+	void SetSession( SessionDataRef session ) { m_Session = session; }
+
+	void ReleaseSession() { m_Session = nullptr; }
 
 protected:
-	SessionData* m_Session;
+	SessionDataRef m_Session;
 
 private:
 	IOCP_TYPE m_IocpType;
@@ -71,17 +74,16 @@ public:
 	}
 	virtual ~RecvObject() {}
 
-	void Initalize( SessionData* session );
+	void Initalize();
 
 	virtual void Execute( int transferByte ) override;
 	void Clear();
 
 	WSABUF& GetWSABUF() { return m_wsabuf;  }
-	char* GetRecvBuffer() { return m_RecvBuffer;  }
-
+	RecvBuffer& GetRecvBuffer() { return m_RecvBuffer;  }
 private:
 	WSABUF m_wsabuf;
-	char m_RecvBuffer[4056];
+	RecvBuffer m_RecvBuffer;
 };
 
 
@@ -97,14 +99,10 @@ public:
 	void Start();
 	static void Worker( IOCP* thisIOCP );
 
-	SOCKET GetSocket() { return m_Socket;  }
 	HANDLE GetIOCPHandle() { return m_IOCPHandle;  }
 
 	void Join();
 	
-protected:
-	SOCKET m_Socket;
-
 private:
 	HANDLE m_IOCPHandle;
 	vector<thread*> m_vecThread;

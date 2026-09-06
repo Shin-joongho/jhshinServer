@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include "ObjectPool.h"
 #include "SessionData.h"
@@ -22,16 +22,19 @@ public:
 
 	void Initalize( int sessionCount );
 
-	SessionData* PopSession();
+	SessionDataRef PopSession();
 	void PushSession( SessionData* session );
 
 	void InsertWait( AcceptObject* acceptObject );
+	void ReWaiting();
+
+	int GetSessionCount();
 
 private:
 	inline static SessionManager* m_SessionManager;
 	ObjectPool<SessionData> m_SessionPools;
 
-	// ¥Î±‚ ≈•
+	// ÎåÄÍ∏∞ ÌÅê
 	mutex m_WaitLock;
 	queue<AcceptObject*> m_WaitQueue;
 };

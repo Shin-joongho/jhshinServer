@@ -1,4 +1,4 @@
-#include "SessionManager.h"
+Ôªø#include "SessionManager.h"
 
 
 SessionManager::SessionManager()
@@ -15,9 +15,15 @@ void SessionManager::Initalize( int sessionCount )
 	m_SessionPools.InitObjectPool( sessionCount );
 }
 
-SessionData* SessionManager::PopSession()
+SessionDataRef SessionManager::PopSession()
 {
-	return m_SessionPools.Pop();
+	SessionData* session = m_SessionPools.Pop();
+	if( nullptr == session )
+	{
+		return nullptr;
+	}
+
+	return SessionDataRef( session, []( SessionData* psession ) { SessionManager::This()->PushSession( psession ); } );
 }
 
 void SessionManager::PushSession( SessionData* session )
@@ -25,31 +31,8 @@ void SessionManager::PushSession( SessionData* session )
 	if( session )
 	{
 		session->Reset();
-		AcceptObject* acceptObject = nullptr;
-
-		{
-			lock_guard<mutex> lg( m_WaitLock );
-
-			if( m_WaitQueue.empty() )
-			{
-				m_SessionPools.Push( session );
-			}
-			else
-			{
-
-				{
-					acceptObject = m_WaitQueue.front();
-					m_WaitQueue.pop();
-				}
-			}
-		}
-
-		if( acceptObject )
-		{
-			acceptObject->SetSession( session );
-			ListenManager::This()->Accept( acceptObject, false );
-		}
-		
+		m_SessionPools.Push( session );
+		ReWaiting();		
 	}
 }
 
@@ -61,10 +44,42 @@ void SessionManager::InsertWait( AcceptObject* acceptObject )
 		m_WaitQueue.push( acceptObject );
 	}
 
-	// ≥÷¥¬ ªÁ¿Ã π›≥≥ »Æ¿Œ
-	SessionData* session = m_SessionPools.Pop();
-	if( session )
+	// ÎÑ£Îäî ÏÇ¨Ïù¥ Î∞òÎÇ© ÌôïÏù∏
+	ReWaiting();
+}
+
+void SessionManager::ReWaiting()
+{
+	AcceptObject* acceptObject = nullptr;
 	{
-		PushSession( session );
+		lock_guard<mutex> lg( m_WaitLock );
+		if( m_WaitQueue.empty() )
+		{
+			return;
+		}
 	}
+	
+	SessionDataRef session = PopSession();
+	if( nullptr == session )
+	{
+		return;
+	}
+
+	{
+		lock_guard<mutex> lg( m_WaitLock );
+		if( m_WaitQueue.empty() )
+		{
+			return;
+		}
+		acceptObject = m_WaitQueue.front();
+		m_WaitQueue.pop();
+	}
+
+	acceptObject->SetSession( session );
+	ListenManager::This()->Accept( acceptObject, false );
+}
+
+int SessionManager::GetSessionCount()
+{
+	return m_SessionPools.GetFreeCount();
 }

@@ -15,6 +15,8 @@ public:
 	T* Pop();
 	bool Push( T* Object );
 
+	int GetFreeCount();
+
 private:
 	mutex m_Lock;
 	vector<T> m_Storage;
@@ -64,7 +66,7 @@ inline T* ObjectPool<T>::Pop()
 	{
 		T* Object = m_Pools.top();
 
-		int index = Object - &m_Storage[0];
+		__int64 index = Object - &m_Storage[0];
 		if( 0 <= index && index < m_MaxSize )
 		{
 			if( false == m_IsUse[index] )
@@ -112,4 +114,10 @@ inline bool ObjectPool<T>::Push( T* Object )
 	}
 
 	return Result;
+}
+
+template<typename T>
+inline int ObjectPool<T>::GetFreeCount()
+{
+	return m_FreeCount;
 }

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -60,6 +60,6 @@ public:
 
 private:
 	sockaddr_in m_addr = {};
-	char m_IPBuffer[INET_ADDRSTRLEN];
-	u_short m_Port;
+	char m_IPBuffer[INET_ADDRSTRLEN] = {};
+	u_short m_Port = 0;
 };

@@ -1,44 +1,67 @@
-#include "ListenManager.h"
-
-#include "ConfigManager.h"
-#include "SessionData.h"
-#include "SessionManager.h"
-#include "SocketUtill.h"
+ï»¿#include "ListenManager.h"
 
 void ListenManager::Initalize( int ThreadCount )
 {
 	m_iocp.Init( ThreadCount );
 
-	GUID guidAcceptEx = WSAID_ACCEPTEX;
-	DWORD bytes = 0;
-	WSAIoctl( m_iocp.GetSocket(), SIO_GET_EXTENSION_FUNCTION_POINTER, &guidAcceptEx, sizeof(guidAcceptEx), &m_lpfnAcceptEx, sizeof(m_lpfnAcceptEx), &bytes, nullptr, nullptr);
+	m_Socket = SocketUtill::MakeSocket();
+	if( m_Socket == SOCKET_ERROR )
+	{
+		return;
+	}
 
-	m_iocp.AddIOCP( m_iocp.GetSocket() );
+	int OptionVal = 1 << eSocketOption_NoDelay | 1 << eSocketOption_ReUseAddr;
+
+	SocketUtill::SetOptions( m_Socket, OptionVal );
+
+	GUID guidAcceptEx = WSAID_ACCEPTEX;
+	GUID guidSocketAddrs = WSAID_GETACCEPTEXSOCKADDRS;
+	DWORD bytes = 0;
+	WSAIoctl( m_Socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidAcceptEx, sizeof(guidAcceptEx), &m_lpfnAcceptEx, sizeof( m_lpfnAcceptEx ), &bytes, nullptr, nullptr);
+	WSAIoctl( m_Socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &guidSocketAddrs, sizeof( guidSocketAddrs ), &m_lpfnGetAcceptExSockaddrs, sizeof( m_lpfnGetAcceptExSockaddrs ), &bytes, nullptr, nullptr);
+
+	m_iocp.AddIOCP( m_Socket );
 }
 
 bool ListenManager::Listen()
 {
-	//int ServerPort = ConfigManager::This()->GetServerPort();
 	int ServerPort = 27130;
-	bool bResult = true;
+	bool Result = true;
 
 	sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons( ServerPort );
 
-	bind( m_iocp.GetSocket(), (sockaddr*)&addr, sizeof( addr ) );
+	if( SOCKET_ERROR == bind( m_Socket, (sockaddr*)&addr, sizeof( addr ) ) )
+	{
+		cout << "[Error] Bind / Port : " << ServerPort << endl;
+		Result = false;
+	}
+	else
+	{
+		cout << "[Success] Bind / Port : " << ServerPort << endl;
+	}
 
-	listen( m_iocp.GetSocket(), SOMAXCONN );
+	if( SOCKET_ERROR == listen( m_Socket, SOMAXCONN ) )
+	{
+		cout << "[Error] Listen" << endl;
+		Result = false;
+	}
+	else
+	{
+		cout << "[Success] Listen" << endl;
+	}
 
-	return bResult;
+	return Result;
 }
 
-void ListenManager::Accept( int acceptCount )
+bool ListenManager::Accept( int acceptCount )
 {
 	if( 0 >= acceptCount )
 	{
-		return;
+		printf( "[Error] AccoeptCount : %d", acceptCount );
+		return false;
 	}
 
 	m_AcceptObjects.reserve( acceptCount );
@@ -52,11 +75,13 @@ void ListenManager::Accept( int acceptCount )
 	}
 
 	m_iocp.Start();
+	return true;
 }
 
-void ListenManager::Accept( AcceptObject* acceptObject, bool popSession )
+bool ListenManager::Accept( AcceptObject* acceptObject, bool popSession )
 {
-	SessionData* session = acceptObject->GetSession();
+	bool Result = false;
+	SessionDataRef session = acceptObject->GetSession();
 
 	if( popSession )
 	{
@@ -67,15 +92,17 @@ void ListenManager::Accept( AcceptObject* acceptObject, bool popSession )
 	if( session )
 	{
 		acceptObject->GetSession()->SetSocket( SocketUtill::MakeSocket() );
-		m_lpfnAcceptEx( m_iocp.GetSocket(), acceptObject->GetSession()->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), static_cast<LPOVERLAPPED>( acceptObject ) );
-
+		m_lpfnAcceptEx( m_Socket, acceptObject->GetSession()->GetSocket(), acceptObject->GetBuffer(), 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, acceptObject->GetByteRecv(), static_cast<LPOVERLAPPED>( acceptObject ) );
+		Result = true;
 	}
 	else
 	{
+		// ì„¸ì…˜ ë¶€ì¡±
 		SessionManager::This()->InsertWait( acceptObject );
-		// ¼¼¼Ç ºÎÁ·
+		Result = true;
 	}
 	
+	return Result;
 }
 
 void ListenManager::Error( AcceptObject* acceptObject )
@@ -90,7 +117,6 @@ void ListenManager::Error( AcceptObject* acceptObject )
 		closesocket( acceptObject->GetSession()->GetSocket() );
 	}
 
-	SessionManager::This()->PushSession( acceptObject->GetSession() );
 	acceptObject->Clear();
 	Accept( acceptObject );
 }

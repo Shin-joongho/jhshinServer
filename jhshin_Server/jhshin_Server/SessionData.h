@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include "SocketUtill.h"
 #include "IOCP.h"
 
-class SessionData
+class SessionData : public enable_shared_from_this<SessionData>
 {
 public:
 	SessionData()
@@ -23,6 +23,7 @@ public:
 
 	RecvObject& GetRecvObject() { return m_Recv;  }
 	
+	bool Recv( int transferByte );
 	bool RecvStart();
 
 	void Reset();

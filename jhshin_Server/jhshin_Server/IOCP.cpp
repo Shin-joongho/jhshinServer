@@ -1,4 +1,4 @@
-#include "IOCP.h"
+ï»¿#include "IOCP.h"
 
 #include "ListenManager.h"
 #include "ServiceManager.h"
@@ -7,7 +7,9 @@
 
 IOCP::IOCP()
 {
+	m_IOCPHandle = INVALID_HANDLE_VALUE;
 	m_vecThread.clear();
+	m_iThreadCount = 0;
 }
 
 IOCP::IOCP( int iThreadCount )
@@ -27,16 +29,6 @@ void IOCP::Init( int iThreadCount )
 	m_vecThread.clear();
 	m_vecThread.reserve( m_iThreadCount );
 
-	m_Socket = SocketUtill::MakeSocket();
-	if( m_Socket == SOCKET_ERROR )
-	{
-		return;
-	}
-
-	int OptionVal = 1 << eSocketOption_NoDelay | 1 << eSocketOption_ReUseAddr;
-
-	SocketUtill::SetOptions( m_Socket, OptionVal );
-
 	m_IOCPHandle = CreateIoCompletionPort( INVALID_HANDLE_VALUE, NULL, 0, 0 );
 
 	return;
@@ -46,7 +38,7 @@ void IOCP::AddIOCP( SOCKET socket )
 {
 	CreateIoCompletionPort( (HANDLE)socket, m_IOCPHandle, 0, 0 );
 
-	return;;
+	return;
 }
 
 void IOCP::Start()
@@ -77,51 +69,28 @@ void IOCP::Worker( IOCP* thisIOCP )
 
 		if( QueueResult )
 		{
-			switch( iocpObject->GetType() )
-			{
-				case IOCP_TYPE::IOCP_TYPE_ACCEPT:
-				{
-					iocpObject->Execute( lptransferByte );
-					break;
-				}
-				case IOCP_TYPE::IOCP_TYPE_RECV:
-				{
-					if( lptransferByte > 0 )
-					{
-						// Á¤»ó Ã³¸®
-						iocpObject->Execute( lptransferByte );
-					}
-					else
-					{
-						// Á¾·á Ã³¸® Ãß°¡
-						ServiceManager::This()->CloseSession( iocpObject->GetSession() );
-
-						DWORD errCode = WSAGetLastError();
-						switch( errCode )
-						{
-						case WAIT_TIMEOUT:
-							break;
-						default:
-
-							break;
-						}
-					}
-
-					break;
-				}
-				default:
-					break;
-			}
-
-			
+			iocpObject->Execute( lptransferByte );			
 		}
 		else
 		{
-			// Ç®¹ÝÈ¯ ÇÊ¿ä
+			// í’€ë°˜í™˜ í•„ìš”
 			if( iocpObject->GetType() == IOCP_TYPE::IOCP_TYPE_ACCEPT )
 			{
 				AcceptObject* acceptObject = (AcceptObject*)iocpObject;
 				ListenManager::This()->Error( acceptObject );
+			}
+			else if( iocpObject->GetType() == IOCP_TYPE::IOCP_TYPE_RECV )
+			{
+				RecvObject* recvObject = (RecvObject*)iocpObject;
+				SessionDataRef session = iocpObject->GetSession();
+				if( session )
+				{
+					iocpObject->SetSession( nullptr );
+					if( false == session->RecvStart() )
+					{
+						ServiceManager::This()->CloseSession( session );
+					}
+				}
 			}
 		}
 	}
@@ -157,41 +126,73 @@ void AcceptObject::Execute( int transferByte )
 		return;
 	}
 
-	GetAcceptExSockaddrs( m_OutputBuffer, 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, &pLocalAddr, &LocalLen, &pRemoteAddr, &RemoteLen );
+	ListenManager::This()->GetSocketAddrsFN() ( m_OutputBuffer, 0, sizeof( SOCKADDR_IN ) + 16, sizeof( SOCKADDR_IN ) + 16, &pLocalAddr, &LocalLen, &pRemoteAddr, &RemoteLen );
 
-	SOCKADDR_IN RemoteSockAddr;
+	SOCKADDR_IN RemoteSockAddr = {};
+	if( RemoteLen < sizeof( RemoteSockAddr ) )
+	{
+		cout << "[Error] GetSocketAddrsFN" << endl;
+		ListenManager::This()->Error( this );
+		return;
+	}
 	memcpy_s( &RemoteSockAddr, sizeof( RemoteSockAddr ), reinterpret_cast<SOCKADDR_IN*>( pRemoteAddr ), RemoteLen );
 
 	m_Session->SetNetAddr( RemoteSockAddr );
 
-	// ¸ÞÀÎ IOCP¿¡ ¿¬°á
-	SOCKET listenSocket = ListenManager::This()->GetIOCP().GetSocket();
+	// ë©”ì¸ IOCPì— ì—°ê²°
+	SOCKET listenSocket = ListenManager::This()->GetSocket();
 	setsockopt( m_Session->GetSocket(), SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&listenSocket, sizeof( listenSocket ));
 
-	ServiceManager::This()->AddIOCP( m_Session );
+	ServiceManager::This()->AddIOCP( m_Session.get() );
 	m_Session->RecvStart();
 
 	Clear();
-	ListenManager::This()->Accept( this );
+	if( false == ListenManager::This()->Accept( this ) )
+	{
+		cout << "[Error] Insert Accept" << endl;
+		ListenManager::This()->Error( this );
+	}
 }
 
 
-void RecvObject::Initalize( SessionData* session )
+void RecvObject::Initalize()
 {
-	m_wsabuf.buf = m_RecvBuffer;
-	m_wsabuf.len = sizeof( m_RecvBuffer );
-	m_Session = session;
+	m_RecvBuffer.Initalize( PACKET_SIZE );
 }
 
 void RecvObject::Execute( int transferByte )
 {
-	// ÆÐÅ¶ÀÌ ´Ù ¿Ô´ÂÁö È®ÀÎ
+	// íŒ¨í‚·ì´ ë‹¤ ì™”ëŠ”ì§€ í™•ì¸
 	if( nullptr == m_Session )
 	{
 		return;
 	}
 
-	m_Session->RecvStart();
+	SessionDataRef session = m_Session;
+
+	if( transferByte <= 0 )
+	{
+		// ì¢…ë£Œ ì²˜ë¦¬ ì¶”ê°€
+		ServiceManager::This()->CloseSession( session );
+		ReleaseSession();
+
+		DWORD errCode = WSAGetLastError();
+		switch( errCode )
+		{
+		case WAIT_TIMEOUT:
+			break;
+		default:
+
+			break;
+		}
+
+		return;
+	}
+
+	if( false == session->Recv( transferByte ) )
+	{
+		ServiceManager::This()->CloseSession( session );
+	}
 }
 
 void RecvObject::Clear()

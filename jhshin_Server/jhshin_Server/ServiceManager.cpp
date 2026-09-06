@@ -1,18 +1,25 @@
-#include "ServiceManager.h"
+﻿#include "ServiceManager.h"
 
 #include "ListenManager.h"
 #include "SessionManager.h"
 
-void ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount )
+bool ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount )
 {
+	bool Result = false;
 	ListenManager* listenManager = ListenManager::This();
-	SessionManager::This()->Initalize( 1000 );
+	SessionManager::This()->Initalize( 3 );
 	m_UserSession.clear();
 	m_iocp.Init( ServiceThreadCount );
 
 	listenManager->Initalize( ListenThreadCount );
-	listenManager->Listen();
-	listenManager->Accept( AcceptCount );
+
+	Result = listenManager->Listen();
+	if( Result )
+	{
+		Result = listenManager->Accept( AcceptCount );
+	}
+
+	return Result;
 }
 
 void ServiceManager::Start()
@@ -29,10 +36,10 @@ void ServiceManager::AddIOCP( SessionData* session )
 
 	m_iocp.AddIOCP( session->GetSocket() );
 
-	InsertUserSession( session );
+	InsertUserSession( session->shared_from_this() );
 }
 
-bool ServiceManager::InsertUserSession( SessionData* session )
+bool ServiceManager::InsertUserSession( SessionDataRef session )
 {
 	bool Result = false;
 
@@ -45,7 +52,7 @@ bool ServiceManager::InsertUserSession( SessionData* session )
 	return Result;
 }
 
-void ServiceManager::EraseUserSession( SessionData* session )
+void ServiceManager::EraseUserSession( SessionDataRef session )
 {
 	if( session )
 	{
@@ -61,12 +68,11 @@ void ServiceManager::Join()
 }
 
 
-void ServiceManager::CloseSession( SessionData* session )
+void ServiceManager::CloseSession( SessionDataRef session )
 {
 	if( session )
 	{
 		closesocket( session->GetSocket() );
 		EraseUserSession( session );
-		SessionManager::This()->PushSession( session );
 	}
 }
