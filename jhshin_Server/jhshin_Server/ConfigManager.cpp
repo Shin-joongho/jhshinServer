@@ -5,11 +5,6 @@
 #endif
 #include <Windows.h>
 
-ConfigManager::ConfigManager()
-    : m_wPath( L"" ), m_ServerPort( 0 )
-{
-}
-
 bool ConfigManager::Init( std::wstring& wfilePath )
 {
     wchar_t wPath[MAX_PATH];

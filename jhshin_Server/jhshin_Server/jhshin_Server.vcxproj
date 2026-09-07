@@ -150,6 +150,7 @@
     <ClInclude Include="ServiceManager.h" />
     <ClInclude Include="SessionData.h" />
     <ClInclude Include="SessionManager.h" />
+    <ClInclude Include="SingletonTemplate.h" />
     <ClInclude Include="SocketUtill.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

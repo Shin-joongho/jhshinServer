@@ -4,19 +4,9 @@
 #include "SessionData.h"
 #include "ListenManager.h"
 
-class SessionManager
+class SessionManager : public SingleT< SessionManager >
 {
 public:
-	static SessionManager* This()
-	{
-		if( nullptr == m_SessionManager )
-		{
-			m_SessionManager = new SessionManager();
-		}
-
-		return m_SessionManager;
-	}
-
 	SessionManager();
 	~SessionManager();
 
@@ -31,7 +21,6 @@ public:
 	int GetSessionCount();
 
 private:
-	inline static SessionManager* m_SessionManager;
 	ObjectPool<SessionData> m_SessionPools;
 
 	// 대기 큐

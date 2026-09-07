@@ -60,7 +60,7 @@ private:
 	PacketID m_PacketHeader;
 };
 
-class SendBuffer
+class SendBuffer : public enable_shared_from_this<SendBuffer>
 {
 public:
 	SendBuffer() {}

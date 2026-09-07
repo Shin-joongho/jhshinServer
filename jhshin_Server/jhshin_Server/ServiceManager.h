@@ -3,20 +3,11 @@
 #include "IOCP.h"
 #include "RSDefine.h"
 #include "SocketUtill.h"
+#include "SingletonTemplate.h"
 
-class ServiceManager
+class ServiceManager : public SingleT< ServiceManager >
 {
 public:
-	static ServiceManager* This()
-	{
-		if( nullptr == m_ServiceManager )
-		{
-			m_ServiceManager = new ServiceManager();
-		}
-
-		return m_ServiceManager;
-	}
-
 	ServiceManager() {}
 	~ServiceManager() {}
 
@@ -35,7 +26,6 @@ public:
 	void CloseSession( SessionDataRef session );
 
 private:
-	inline static ServiceManager* m_ServiceManager;
 	IOCP m_iocp;
 
 	mutex m_Lock;
