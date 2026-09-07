@@ -97,7 +97,7 @@ inline bool ObjectPool<T>::Push( T* Object )
 	}
 
 	// 중복 반환 체크
-	int index = Object - &m_Storage[0];
+	__int64 index = Object - &m_Storage[0];
 	if( 0 <= index && index < m_MaxSize )
 	{
 		if( m_IsUse[index] )

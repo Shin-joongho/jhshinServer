@@ -1,6 +1,6 @@
 #pragma once
 
-// main俊辑 概聪历 固府 积己秦辑 静扁
+// main鞐愳劀 毵る媹鞝� 氙鸽Μ 靸濎劚頃挫劀 鞊瓣赴
 template< typename T >
 class SingleT
 {
