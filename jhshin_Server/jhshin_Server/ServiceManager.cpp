@@ -19,6 +19,9 @@ bool ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, i
 		Result = listenManager->Accept( AcceptCount );
 	}
 
+	// 테스트용 고정치
+	m_SendBuffer.InitObjectPool( 10 );
+
 	return Result;
 }
 
@@ -74,5 +77,58 @@ void ServiceManager::CloseSession( SessionDataRef session )
 	{
 		closesocket( session->GetSocket() );
 		EraseUserSession( session );
+	}
+}
+
+tuple<SendChunk, bool>  ServiceManager::MakeSendPacket( const char* sendData, const int sendSize )
+{
+	lock_guard<mutex> lg( m_SendLock );
+
+	bool Result = false;
+	SendChunk sendChunk;
+
+	if( nullptr == m_LastSendBuffer )
+	{
+		m_LastSendBuffer = GetSendBuffer();
+		if( nullptr == m_LastSendBuffer )
+		{
+			// 풀 부족
+			return make_tuple( sendChunk, false );
+		}
+		
+	}
+
+	tuple<int, int> tp = m_LastSendBuffer->CopyBuffer( sendData, sendSize );
+	int bufferPointer = get<0>( tp );
+	int totalSize = get<1>( tp );
+	if( bufferPointer == -1 )
+	{
+		m_LastSendBuffer = GetSendBuffer();
+		if( nullptr == m_LastSendBuffer )
+		{
+			// 풀 부족 
+			return make_tuple( sendChunk, false );
+		}
+
+		tp = m_LastSendBuffer->CopyBuffer( sendData, sendSize );
+		bufferPointer = get<0>( tp );
+		totalSize = get<1>( tp );
+	}
+
+	sendChunk.Set( m_LastSendBuffer, m_LastSendBuffer->GetSendBuffer( bufferPointer ), totalSize );
+
+	return make_tuple( sendChunk, true );
+}
+
+SendBufferRef ServiceManager::GetSendBuffer()
+{
+	SendBuffer* sendBuffer = m_SendBuffer.Pop();
+	if( sendBuffer )
+	{
+		return SendBufferRef( sendBuffer, [this]( SendBuffer* psendBuffer ) { this->m_SendBuffer.Push( psendBuffer ); } );
+	}
+	else
+	{
+		return nullptr;
 	}
 }

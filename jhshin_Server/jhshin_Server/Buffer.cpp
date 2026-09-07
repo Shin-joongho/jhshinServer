@@ -103,3 +103,29 @@ void RecvBuffer::Clear()
         m_PacketHeader._type = PacketType::PacketType_NULL;
     }
 }
+
+tuple<int, int> SendBuffer::CopyBuffer( const char* copyData, int sendSize )
+{
+    if( IsCopy( PacketID_SIZE + sendSize ) )
+    {
+        int ReturnPointer = m_pointer;
+
+        // 패킷 헤더먼저 추가
+        PacketID pi( PacketType::PacketType_Server, sendSize );
+        int piSize = sizeof( pi );
+
+        memcpy( &m_chunk[m_pointer], &pi, piSize );
+        m_pointer += piSize;
+        memcpy( &m_chunk[m_pointer], copyData, sendSize );
+        m_pointer += sendSize;
+        
+        return make_tuple( ReturnPointer, sendSize + piSize );
+    }
+
+    return make_tuple( -1, 0 );
+}
+
+bool SendBuffer::IsCopy( int sendSize )
+{
+    return GetChunkSize() < m_pointer + sendSize ? false : true;
+}

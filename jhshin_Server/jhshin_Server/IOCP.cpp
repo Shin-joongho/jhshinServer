@@ -200,6 +200,31 @@ void RecvObject::Clear()
 	memset( static_cast<OVERLAPPED*>( this ), 0, sizeof( OVERLAPPED ) );
 }
 
+void SendObject::Execute( int transferByte )
+{
+	SessionDataRef session = GetSession();
+	Clear();
+	session->CheckSendComplete();
+}
+
+void SendObject::Clear()
+{
+	memset( static_cast<OVERLAPPED*>( this ), 0, sizeof( OVERLAPPED ) );
+	m_Session = nullptr;
+	m_wsabufs.clear();
+	m_SendChunks.clear();
+}
+
+void SendObject::AddSendChunk( SendChunk& sendChunk )
+{
+	WSABUF wsabuf;
+	wsabuf.buf = sendChunk.m_buffer;
+	wsabuf.len = sendChunk.m_size;
+
+	m_SendChunks.push_back( sendChunk );
+	m_wsabufs.push_back( wsabuf );
+}
+
 void AcceptObject::Clear()
 {
 	memset( static_cast<OVERLAPPED*>( this ), 0, sizeof( OVERLAPPED ) );

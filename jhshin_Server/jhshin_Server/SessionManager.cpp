@@ -23,6 +23,7 @@ SessionDataRef SessionManager::PopSession()
 		return nullptr;
 	}
 
+	// 자동 반환
 	return SessionDataRef( session, []( SessionData* psession ) { SessionManager::This()->PushSession( psession ); } );
 }
 

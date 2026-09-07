@@ -17,5 +17,6 @@ using namespace std;
 using uint16 = unsigned __int16;
 
 using SessionDataRef = shared_ptr<class SessionData>;
+using SendBufferRef = shared_ptr<class SendBuffer>;
 
 const int PACKET_SIZE = 4096;

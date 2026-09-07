@@ -6,14 +6,26 @@
 enum class PacketType : uint16
 {
 	PacketType_NULL = 0,
-	PacketType_Recv,
-	PacketType_Send,
+	PacketType_Server,
+	PacketType_Client,
 };
 
 struct PacketID
 {
 	PacketType _type;
+	// 헤더 크기를 뺀 실제 데이터 크기
 	uint16 _size;
+	
+	PacketID() 
+	{
+		_type = PacketType::PacketType_NULL;
+		_size = 0;
+	}
+	PacketID( PacketType type, uint16 size )
+	{
+		_type = type;
+		_size = size;
+	}
 };
 
 const uint16 PacketID_SIZE = sizeof( PacketID );
@@ -60,12 +72,26 @@ private:
 	PacketID m_PacketHeader;
 };
 
+// Send는 세션별이 아니라 Room이나 Map기준으로 보냄
 class SendBuffer : public enable_shared_from_this<SendBuffer>
 {
 public:
 	SendBuffer() {}
 	~SendBuffer() {}
 
-private:
+	tuple<int, int> CopyBuffer( const char* copyData, int sendSize );
+	int GetPointer() { return m_pointer; }
+	int GetChunkSize() { return sizeof( m_chunk ); }
+	bool IsCopy( int sendSize );
 
+	char* GetSendBuffer( int pointer ) { return &m_chunk[pointer]; }
+	void Reset()
+	{
+		memset( m_chunk, 0, sizeof( m_chunk ) );
+		m_pointer = 0;
+	}
+
+private:
+	char m_chunk[PACKET_SIZE * 10] = {};
+	int m_pointer = 0;
 };

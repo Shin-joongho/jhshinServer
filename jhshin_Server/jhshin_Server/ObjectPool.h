@@ -19,7 +19,7 @@ public:
 
 private:
 	mutex m_Lock;
-	vector<T> m_Storage;
+	unique_ptr<T[]> m_Storage;
 	stack<T*> m_Pools;
 	vector<bool> m_IsUse;
 	int m_FreeCount = 0;
@@ -47,7 +47,7 @@ inline void ObjectPool<T>::InitObjectPool( int PoolSize )
 
 	m_MaxSize = PoolSize;
 	m_FreeCount = PoolSize;
-	m_Storage.resize( PoolSize );
+	m_Storage = make_unique<T[]>( PoolSize );
 	m_IsUse.resize( PoolSize, false );
 
 	for( int i = 0; i < PoolSize; ++i )

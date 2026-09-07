@@ -4,8 +4,6 @@
 #include "SocketUtill.h"
 #include "Buffer.h"
 
-class SessionData;
-
 enum class IOCP_TYPE
 {
 	IOCP_TYPE_NONE,
@@ -48,8 +46,8 @@ class AcceptObject : public IOCPObject
 public:
 	AcceptObject()
 	{
-		SetType( IOCP_TYPE::IOCP_TYPE_ACCEPT );
 		Clear();
+		SetType( IOCP_TYPE::IOCP_TYPE_ACCEPT );
 	}
 	virtual ~AcceptObject() {}
 
@@ -69,8 +67,8 @@ class RecvObject : public IOCPObject
 public:
 	RecvObject() 
 	{
-		SetType( IOCP_TYPE::IOCP_TYPE_RECV );
 		Clear();
+		SetType( IOCP_TYPE::IOCP_TYPE_RECV );
 	}
 	virtual ~RecvObject() {}
 
@@ -81,9 +79,48 @@ public:
 
 	WSABUF& GetWSABUF() { return m_wsabuf;  }
 	RecvBuffer& GetRecvBuffer() { return m_RecvBuffer;  }
+
 private:
 	WSABUF m_wsabuf;
 	RecvBuffer m_RecvBuffer;
+};
+
+struct SendChunk
+{
+	SendBufferRef m_sendBuffer;
+	char* m_buffer;
+	int m_size;
+
+	void Set( SendBufferRef sendBuffer, char* buffer, int size )
+	{
+		m_sendBuffer = sendBuffer;
+		m_buffer = buffer;
+		m_size = size;
+	}
+};
+
+class SendObject : public IOCPObject
+{
+public:
+	SendObject()
+	{
+		Clear();
+		SetType( IOCP_TYPE::IOCP_TYPE_SEND );
+	}
+	virtual ~SendObject() {}
+	virtual void Execute( int transferByte ) override;
+
+	void Clear();
+
+	WSABUF* GetWSABUFs() { return m_wsabufs.data(); }
+	int GetWSABUFSize() { return m_wsabufs.size(); }
+
+	bool Empty() { return m_SendChunks.empty(); }
+
+	void AddSendChunk( SendChunk& sendChunk );
+private:
+	vector<WSABUF> m_wsabufs;
+	vector<SendChunk> m_SendChunks;
 };
 
 
