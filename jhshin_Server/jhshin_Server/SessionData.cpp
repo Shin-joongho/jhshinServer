@@ -18,7 +18,10 @@ bool SessionData::Recv( int transferByte )
 		const int iPacketSize = bodySize + PacketID_SIZE;
 		const char* body = m_Recv.GetRecvBuffer().GetReadData();
 
-		PacketHandler::Dispatch( packetType, shared_from_this(), body, bodySize );
+		if( false == PacketHandler::Dispatch( packetType, shared_from_this(), body, bodySize ) )
+		{
+			cout << "PakcetHandler Error : " << (int)packetType << endl;
+		}
 
 		m_Recv.GetRecvBuffer().SetReadPos( iPacketSize );
 	}

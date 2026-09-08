@@ -6,11 +6,6 @@ bool PacketHandler::Init()
 #define X( name )  if( false == Register( PacketType::name, HANDLE_##name ) ) { return false; }
 	CLIENT_PACKET(X)
 #undef X
-
-	if( !Result )
-	{
-		return false;
-	}
 }
 
 bool PacketHandler::Register( PacketType packetType, PacketHandlerFunc func )
