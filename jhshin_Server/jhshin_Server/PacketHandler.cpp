@@ -2,7 +2,6 @@
 
 bool PacketHandler::Init()
 {
-	bool Result = false;
 #define X( name )  if( false == Register( PacketType::name, HANDLE_##name ) ) { return false; }
 	CLIENT_PACKET( X )
 #undef X

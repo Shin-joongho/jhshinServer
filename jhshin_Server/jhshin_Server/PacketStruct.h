@@ -8,6 +8,8 @@
 #define SERVER_PACKET( X ) \
 	X( PacketType_SERVER_ECHO )
 
+#pragma pack(push, 1)
+
 enum class PacketType : uint16
 {
 	PacketType_NULL = 0,
@@ -43,8 +45,6 @@ struct PacketID
 	}
 };
 
-#pragma pack(push, 1)
-
 struct Client_ECHO_Req
 {
 public:
@@ -58,7 +58,7 @@ public:
 
 	void Set( char* text )
 	{
-		strcpy_s( m_text, text );
+		strncpy_s( m_text, sizeof( m_text), text, _TRUNCATE );
 	}
 };
 
