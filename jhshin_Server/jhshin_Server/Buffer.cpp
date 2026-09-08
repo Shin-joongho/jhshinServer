@@ -1,4 +1,4 @@
-#include "Buffer.h"
+ï»¿#include "Buffer.h"
 
 void RecvBuffer::Initalize( int bufferSize )
 {
@@ -12,7 +12,7 @@ char* RecvBuffer::GetReadBuffer()
 
 char* RecvBuffer::GetReadData()
 {
-    // ½ÇÁ¦ µ¥ÀÌÅÍ
+    // ì‹¤ì œ ë°ì´í„°
     return &m_buffer[m_readPos + PacketID_SIZE];
 }
 
@@ -42,7 +42,7 @@ bool RecvBuffer::DivideBuffer( int transferbyte )
         m_PacketHeader = *packetID;
     }
     
-    // ´õ ¹Ş¾Æ¾ßÇÏ´ÂÁö È®ÀÎ ÇÊ¿ä
+    // ë” ë°›ì•„ì•¼í•˜ëŠ”ì§€ í™•ì¸ í•„ìš”
     if( GetBufferSize() < PacketID_SIZE || m_PacketHeader._size > GetBufferSize() - PacketID_SIZE )
     {
         Clear();
@@ -55,7 +55,7 @@ bool RecvBuffer::DivideBuffer( int transferbyte )
 
 void RecvBuffer::SetReadPos( int transferbyte )
 {
-    // readPos°¡ writePos¸¦ ³ÑÀ¸¸é ¾ÈµÊ
+    // readPosê°€ writePosë¥¼ ë„˜ìœ¼ë©´ ì•ˆë¨
     if( transferbyte <= 0 || m_readPos + transferbyte > m_writePos )
     {
         return;
@@ -73,7 +73,7 @@ bool RecvBuffer::IsCheckData()
 void RecvBuffer::Clear()
 {
     bool IsClear = false;
-    // ¸¸¾à ¹öÆÛ »çÀÌÁî¸¦ ÃÊ°úÇØ¼­ º¸³»´Â °Å¶ó¸é ÇØ´ç ÆĞÅ¶ Æ÷±â
+    // ë§Œì•½ ë²„í¼ ì‚¬ì´ì¦ˆë¥¼ ì´ˆê³¼í•´ì„œ ë³´ë‚´ëŠ” ê±°ë¼ë©´ í•´ë‹¹ íŒ¨í‚· í¬ê¸°
     if( m_PacketHeader._size > m_buffer.size() - PacketID_SIZE )
     {
         IsClear = true;
@@ -82,7 +82,7 @@ void RecvBuffer::Clear()
     {
         if( IsCheckData() )
         {
-            // µ¥ÀÌÅÍ°¡ ÀÖÀ¸¸é ¿¬¼ÓÀ¸·Î ´õ ¹ŞÀ» ¼ö ÀÖ°Ô ¾ÕÀ¸·Î ¹Ğ±â
+            // ë°ì´í„°ê°€ ìˆìœ¼ë©´ ì—°ì†ìœ¼ë¡œ ë” ë°›ì„ ìˆ˜ ìˆê²Œ ì•ìœ¼ë¡œ ë°€ê¸°
             memmove( &m_buffer[0], &m_buffer[m_readPos], GetBufferSize() );
             m_writePos -= m_readPos;
             m_readPos = 0;
@@ -96,7 +96,7 @@ void RecvBuffer::Clear()
 
     if( IsClear )
     {
-        // µ¥ÀÌÅÍ°¡ ¾øÀ¸¸é 0À¸·Î ÃÊ±âÈ­
+        // ë°ì´í„°ê°€ ì—†ìœ¼ë©´ 0ìœ¼ë¡œ ì´ˆê¸°í™”
         m_readPos = 0;
         m_writePos = 0;
         m_PacketHeader._size = 0;
@@ -110,7 +110,7 @@ tuple<int, int> SendBuffer::CopyBuffer( const char* copyData, int sendSize )
     {
         int ReturnPointer = m_pointer;
 
-        // ÆĞÅ¶ Çì´õ¸ÕÀú Ãß°¡
+        // íŒ¨í‚· í—¤ë”ë¨¼ì € ì¶”ê°€
         PacketID pi( PacketType::PacketType_Server, sendSize );
         int piSize = sizeof( pi );
 

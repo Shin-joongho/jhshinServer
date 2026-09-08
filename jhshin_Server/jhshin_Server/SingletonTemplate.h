@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // main에서 매니저 미리 생성해서 쓰기
 template< typename T >

@@ -113,7 +113,7 @@ public:
 	void Clear();
 
 	WSABUF* GetWSABUFs() { return m_wsabufs.data(); }
-	int GetWSABUFSize() { return m_wsabufs.size(); }
+	int GetWSABUFSize() { return (int)m_wsabufs.size(); }
 
 	bool Empty() { return m_SendChunks.empty(); }
 

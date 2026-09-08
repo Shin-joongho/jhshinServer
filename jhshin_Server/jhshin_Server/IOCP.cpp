@@ -92,6 +92,16 @@ void IOCP::Worker( IOCP* thisIOCP )
 					}
 				}
 			}
+			else if( iocpObject->GetType() == IOCP_TYPE::IOCP_TYPE_SEND )
+			{
+				SendObject* sendObject = (SendObject*)iocpObject;
+				SessionDataRef session = iocpObject->GetSession();
+				sendObject->Clear();
+				if( session )
+				{
+					ServiceManager::This()->CloseSession( session );
+				}
+			}
 		}
 	}
 }
@@ -204,6 +214,31 @@ void SendObject::Execute( int transferByte )
 {
 	SessionDataRef session = GetSession();
 	Clear();
+
+	if( nullptr == session )
+	{
+		return;
+	}
+
+	if( transferByte <= 0 )
+	{
+		// 세션 종료
+
+		ServiceManager::This()->CloseSession( session );
+
+		DWORD errCode = WSAGetLastError();
+		switch( errCode )
+		{
+		case WAIT_TIMEOUT:
+			break;
+		default:
+
+			break;
+		}
+
+		return;
+	}
+
 	session->CheckSendComplete();
 }
 

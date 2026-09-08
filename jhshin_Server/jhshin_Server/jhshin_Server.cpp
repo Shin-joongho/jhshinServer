@@ -8,7 +8,7 @@ int main()
 
 	ServiceManager* serviceManager = ServiceManager::This();
 
-	serviceManager->Initalize( 10, 1, 10 );
+	serviceManager->Initalize( 8, 1, 128 );
 	serviceManager->Start();
 
 	serviceManager->Join();

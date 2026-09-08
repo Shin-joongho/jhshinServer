@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "RSDefine.h"
 
@@ -13,7 +13,7 @@ enum class PacketType : uint16
 struct PacketID
 {
 	PacketType _type;
-	// Çì´õ Å©±â¸¦ »« ½ÇÁ¦ µ¥ÀÌÅÍ Å©±â
+	// í—¤ë” í¬ê¸°ë¥¼ ëº€ ì‹¤ì œ ë°ì´í„° í¬ê¸°
 	uint16 _size;
 	
 	PacketID() 
@@ -72,7 +72,7 @@ private:
 	PacketID m_PacketHeader;
 };
 
-// Send´Â ¼¼¼Çº°ÀÌ ¾Æ´Ï¶ó RoomÀÌ³ª Map±âÁØÀ¸·Î º¸³¿
+// SendëŠ” ì„¸ì…˜ë³„ì´ ì•„ë‹ˆë¼ Roomì´ë‚˜ Mapê¸°ì¤€ìœ¼ë¡œ ë³´ëƒ„
 class SendBuffer : public enable_shared_from_this<SendBuffer>
 {
 public:
