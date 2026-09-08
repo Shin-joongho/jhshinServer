@@ -1,9 +1,12 @@
-#pragma once
+Ôªø#pragma once
 
 #include "RSDefine.h"
 
 #define CLIENT_PACKET( X ) \
 	X( PacketType_CLIENT_ECHO )
+
+#define SERVER_PACKET( X ) \
+	X( PacketType_SERVER_ECHO )
 
 enum class PacketType : uint16
 {
@@ -13,9 +16,11 @@ enum class PacketType : uint16
 	CLIENT_PACKET( X )
 #undef X
 
-	PacketType_CLIENT_END = 99, // ø©±‚±Ó¡ˆ ≈¨∂Û
+	PacketType_CLIENT_END = 99, // Ïó¨Í∏∞ÍπåÏßÄ ÌÅ¥Îùº
 
-	PacketType_SERVER_ECHO = 100,
+#define X( name ) name,
+	SERVER_PACKET( X )
+#undef X
 
 	PacketType_MAX = 999,
 };
@@ -23,7 +28,7 @@ enum class PacketType : uint16
 struct PacketID
 {
 	PacketType _type;
-	// «Ï¥ı ≈©±‚∏¶ ª´ Ω«¡¶ µ•¿Ã≈Õ ≈©±‚
+	// Ìó§Îçî ÌÅ¨Í∏∞Î•º Î∫Ä Ïã§Ï†ú Îç∞Ïù¥ÌÑ∞ ÌÅ¨Í∏∞
 	uint16 _size;
 
 	PacketID()

@@ -1,11 +1,12 @@
-#include "PacketHandler.h"
+﻿#include "PacketHandler.h"
 
 bool PacketHandler::Init()
 {
 	bool Result = false;
 #define X( name )  if( false == Register( PacketType::name, HANDLE_##name ) ) { return false; }
-	CLIENT_PACKET(X)
+	CLIENT_PACKET( X )
 #undef X
+	return true;
 }
 
 bool PacketHandler::Register( PacketType packetType, PacketHandlerFunc func )
@@ -17,7 +18,7 @@ bool PacketHandler::Register( PacketType packetType, PacketHandlerFunc func )
 	}
 	else
 	{
-		// �ߺ�
+		// 중복
 		cout << "PakcetType Duplication : " << (int)packetType << endl;
 		return false;
 	}

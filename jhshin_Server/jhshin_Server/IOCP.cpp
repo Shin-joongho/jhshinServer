@@ -201,6 +201,7 @@ void RecvObject::Execute( int transferByte )
 
 	if( false == session->Recv( transferByte ) )
 	{
+		cout << "PakcetHandler Error " << endl;
 		ServiceManager::This()->CloseSession( session );
 	}
 }
