@@ -14,18 +14,11 @@ bool SessionData::Recv( int transferByte )
 	{
 		divideByte = 0;
 		const uint16 bodySize = m_Recv.GetRecvBuffer().GetPacketID()._size;
+		PacketType packetType = m_Recv.GetRecvBuffer().GetPacketID()._type;
 		const int iPacketSize = bodySize + PacketID_SIZE;
-
 		const char* body = m_Recv.GetRecvBuffer().GetReadData();
-		tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ECHO, body, bodySize );
-		if( get<1>( check ) )
-		{
-			InsertSendQueue( get<0>( check ) );
-		}
-		else
-		{
-			cout << "[Error] MakeSendPacket - SendBuffer pool exhausted" << endl;
-		}
+
+		PacketHandler::Dispatch( packetType, shared_from_this(), body, bodySize );
 
 		m_Recv.GetRecvBuffer().SetReadPos( iPacketSize );
 	}

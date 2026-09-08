@@ -137,6 +137,7 @@
     <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="PacketHandler.cpp" />
+    <ClCompile Include="PacketStruct.cpp" />
     <ClCompile Include="ServiceManager.cpp" />
     <ClCompile Include="SessionData.cpp" />
     <ClCompile Include="SessionManager.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="PacketHandler.h" />
+    <ClInclude Include="PacketStruct.h" />
     <ClInclude Include="RSDefine.h" />
     <ClInclude Include="ServiceManager.h" />
     <ClInclude Include="SessionData.h" />

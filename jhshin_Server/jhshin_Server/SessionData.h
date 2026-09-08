@@ -3,6 +3,7 @@
 #include "SocketUtill.h"
 #include "IOCP.h"
 #include "ServiceManager.h"
+#include "PacketHandler.h"
 
 class SessionData : public enable_shared_from_this<SessionData>
 {

@@ -22,7 +22,8 @@ int main()
 		serviceManager->Join();
 	}
 
-	sessionManager->Release();
-	listenManager->Release();
 	serviceManager->Release();
+	listenManager->Release();
+	sessionManager->Release();
+
 }

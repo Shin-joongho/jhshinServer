@@ -2,6 +2,8 @@
 
 #include "RSDefine.h"
 #include "Buffer.h"
+#include "PacketStruct.h"
+#include "SessionData.h"
 
 using PacketHandlerFunc = bool ( * )( const SessionDataRef& session, const char* bufferData, int bufferSize );
 #define REGISTER_HANDLE( packettype ) Register( PacketType::packettype, HANDLE_##packettype );
