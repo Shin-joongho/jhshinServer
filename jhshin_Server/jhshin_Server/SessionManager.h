@@ -19,6 +19,7 @@ public:
 	void ReWaiting();
 
 	int GetSessionCount();
+	int GetSessionMaxCount() { return m_SessionPools.GetMaxCount(); }
 
 private:
 	ObjectPool<SessionData> m_SessionPools;

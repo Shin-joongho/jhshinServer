@@ -16,6 +16,7 @@ public:
 	bool Push( T* Object );
 
 	int GetFreeCount();
+	int GetMaxCount() { return m_MaxSize; }
 
 private:
 	mutex m_Lock;

@@ -28,7 +28,14 @@ public:
 
 	tuple<SendChunk, bool> MakeSendPacket( const char* sendData, const int sendSize );
 	SendBufferRef GetSendBuffer();
+
+	// 부하 중 내부 상태를 주기적으로 출력한다.
+	// intervalSec 이 0 이면 시작하지 않는다.
+	void StartMonitor( int intervalSec );
+
 private:
+	static void MonitorLoop( ServiceManager* self, int intervalSec );
+
 	IOCP m_iocp;
 
 	mutex m_Lock;

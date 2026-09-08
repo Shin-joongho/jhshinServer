@@ -48,6 +48,29 @@ static const char*          SERVER_IP      = "127.0.0.1";
 static const unsigned short SERVER_PORT    = 27130;
 static const size_t         MAX_SAMPLES    = 50000;   // 스레드당 지연 샘플 상한
 
+// 이 프로세스가 지금까지 쓴 CPU 시간(커널+유저)을 초 단위로 돌려준다.
+static double ProcessCpuSeconds()
+{
+    FILETIME createTime = {};
+    FILETIME exitTime   = {};
+    FILETIME kernelTime = {};
+    FILETIME userTime   = {};
+
+    if( FALSE == GetProcessTimes( GetCurrentProcess(), &createTime, &exitTime, &kernelTime, &userTime ) )
+    {
+        return 0.0;
+    }
+
+    ULARGE_INTEGER k = {};
+    ULARGE_INTEGER u = {};
+    k.LowPart  = kernelTime.dwLowDateTime;
+    k.HighPart = kernelTime.dwHighDateTime;
+    u.LowPart  = userTime.dwLowDateTime;
+    u.HighPart = userTime.dwHighDateTime;
+
+    return ( k.QuadPart + u.QuadPart ) / 10000000.0;
+}
+
 static int64 NowNanos()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -281,8 +304,9 @@ int main( int argc, char** argv )
         std::chrono::duration<double>( std::chrono::steady_clock::now() - waitStart ).count();
 
     // 동시 출발
-    const auto start = std::chrono::steady_clock::now();
-    g_deadline       = start + std::chrono::seconds( seconds );
+    const auto   start    = std::chrono::steady_clock::now();
+    const double cpuStart = ProcessCpuSeconds();
+    g_deadline            = start + std::chrono::seconds( seconds );
     g_go.store( true, std::memory_order_release );
 
     for( auto& t : threads )
@@ -292,6 +316,8 @@ int main( int argc, char** argv )
 
     const double elapsed =
         std::chrono::duration<double>( std::chrono::steady_clock::now() - start ).count();
+    const double cpuUsed = ProcessCpuSeconds() - cpuStart;
+    const unsigned int cores = std::thread::hardware_concurrency();
 
     long long          total     = 0;
     int                connected = 0;
@@ -336,6 +362,10 @@ int main( int argc, char** argv )
     printf( "측정 구간  : %.2f 초 (설정 %d 초 / 스레드 평균 %.2f, 최대 %.2f)\n",
             elapsed, seconds, runAvg, runMax );
     printf( "처리량     : %.0f 왕복/초\n", elapsed > 0 ? total / elapsed : 0.0 );
+    printf( "클라 CPU   : %.2f / %u 코어 (%.1f%%)\n",
+            elapsed > 0 ? cpuUsed / elapsed : 0.0,
+            cores,
+            ( elapsed > 0 && cores > 0 ) ? ( cpuUsed / elapsed / cores * 100.0 ) : 0.0 );
 
     printf( "\n왕복 지연 (ms, 샘플 %zu)\n", allRtts.size() );
     printf( "  평균 %8.3f\n", avg );
