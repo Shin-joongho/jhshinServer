@@ -7,6 +7,11 @@
 #include <cstdio>
 #include <Windows.h>
 
+// 각 호출하는 스레드에서 마지막으로 사용한 SendBuffer를 가지고 요청오면 해당 버퍼에서 청크를 꺼내 사용
+// 각 TLS에 접근하는건 해당 스레드 뿐이니 락 필요없고
+// 풀에서 가져올때만 내부적인 락 사용
+thread_local SendBufferRef LSendBuffer;
+
 bool ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount )
 {
 	bool Result = false;
@@ -167,14 +172,7 @@ void ServiceManager::CloseSession( SessionDataRef session )
 	}
 }
 
-// 스레드마다 "지금 잘라 쓰는 청크"를 하나씩 들고 있다.
-// 커서를 전진시키는 주체가 자기 스레드 하나뿐이라 락이 필요 없고,
-// 락은 청크를 새로 꺼낼 때 ObjectPool 내부에서만 잡힌다.
-// 이전 청크는 거기서 잘려나간 SendChunk 들이 shared_ptr 로 붙잡고 있으므로
-// 전송이 전부 끝나야 풀로 반납된다.
-thread_local SendBufferRef LSendBuffer;
-
-tuple<SendChunk, bool>  ServiceManager::MakeSendPacket( const char* sendData, const int sendSize )
+tuple<SendChunk, bool>  ServiceManager::MakeSendPacket( PacketType packetType, const char* sendData, const int sendSize )
 {
 	SendChunk sendChunk;
 
@@ -188,7 +186,7 @@ tuple<SendChunk, bool>  ServiceManager::MakeSendPacket( const char* sendData, co
 		}
 	}
 
-	tuple<int, int> tp = LSendBuffer->CopyBuffer( sendData, sendSize );
+	tuple<int, int> tp = LSendBuffer->CopyBuffer( packetType, sendData, sendSize );
 	int bufferPointer = get<0>( tp );
 	int totalSize = get<1>( tp );
 	if( bufferPointer == -1 )
@@ -201,7 +199,7 @@ tuple<SendChunk, bool>  ServiceManager::MakeSendPacket( const char* sendData, co
 			return make_tuple( sendChunk, false );
 		}
 
-		tp = LSendBuffer->CopyBuffer( sendData, sendSize );
+		tp = LSendBuffer->CopyBuffer( packetType, sendData, sendSize );
 		bufferPointer = get<0>( tp );
 		totalSize = get<1>( tp );
 

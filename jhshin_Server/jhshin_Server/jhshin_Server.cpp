@@ -1,17 +1,28 @@
 ﻿#include "ServiceManager.h"
 #include "ConfigManager.h"
 #include "ListenManager.h"
+#include "SessionManager.h"
+#include "PacketHandler.h"
 
 int main()
 {
 	SocketUtill::Initialize();
 
-	ServiceManager* serviceManager = ServiceManager::This();
+	ServiceManager* serviceManager = ServiceManager::Create();
+	ListenManager* listenManager = ListenManager::Create();
+	SessionManager* sessionManager = SessionManager::Create();
 
-	serviceManager->Initalize( 8, 1, 128 );
-	serviceManager->Start();
+	if( PacketHandler::Init() )
+	{
+		serviceManager->Initalize( 8, 1, 128 );
+		serviceManager->Start();
 
-	serviceManager->StartMonitor( 2 );   // 2초마다 CPU / 접속 / 풀 상태 출력
+		serviceManager->StartMonitor( 2 );
 
-	serviceManager->Join();
+		serviceManager->Join();
+	}
+
+	sessionManager->Release();
+	listenManager->Release();
+	serviceManager->Release();
 }

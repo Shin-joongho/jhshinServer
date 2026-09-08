@@ -26,11 +26,9 @@ public:
 
 	void CloseSession( SessionDataRef session );
 
-	tuple<SendChunk, bool> MakeSendPacket( const char* sendData, const int sendSize );
+	tuple<SendChunk, bool> MakeSendPacket( PacketType packetType, const char* sendData, const int sendSize );
 	SendBufferRef GetSendBuffer();
 
-	// 부하 중 내부 상태를 주기적으로 출력한다.
-	// intervalSec 이 0 이면 시작하지 않는다.
 	void StartMonitor( int intervalSec );
 
 private:
@@ -41,9 +39,6 @@ private:
 	mutex m_Lock;
 	unordered_map<SOCKET, SessionDataRef> m_UserSession;
 
-	// 청크 풀은 ObjectPool 내부 뮤텍스로 보호된다.
-	// "현재 잘라 쓰는 청크"는 ServiceManager.cpp 의 thread_local 변수로 옮겼다.
-	// 모든 송신이 공유 멤버 하나를 거치면 전역 락이 되어버리기 때문.
 	ObjectPool<SendBuffer> m_SendBuffer;
 };
 

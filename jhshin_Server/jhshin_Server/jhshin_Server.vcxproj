@@ -136,6 +136,7 @@
     <ClCompile Include="ListenManager.cpp" />
     <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="Buffer.cpp" />
+    <ClCompile Include="PacketHandler.cpp" />
     <ClCompile Include="ServiceManager.cpp" />
     <ClCompile Include="SessionData.cpp" />
     <ClCompile Include="SessionManager.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="ListenManager.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="Buffer.h" />
+    <ClInclude Include="PacketHandler.h" />
     <ClInclude Include="RSDefine.h" />
     <ClInclude Include="ServiceManager.h" />
     <ClInclude Include="SessionData.h" />
@@ -155,6 +157,5 @@
     <ClInclude Include="SocketUtill.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

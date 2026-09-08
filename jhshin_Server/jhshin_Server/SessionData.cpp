@@ -16,10 +16,8 @@ bool SessionData::Recv( int transferByte )
 		const uint16 bodySize = m_Recv.GetRecvBuffer().GetPacketID()._size;
 		const int iPacketSize = bodySize + PacketID_SIZE;
 
-		// 에코 : 받은 바디를 그대로 되돌려 보낸다.
-		// MakeSendPacket 이 청크로 복사하므로 수신 버퍼를 그대로 넘겨도 안전하다.
 		const char* body = m_Recv.GetRecvBuffer().GetReadData();
-		tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( body, bodySize );
+		tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ECHO, body, bodySize );
 		if( get<1>( check ) )
 		{
 			InsertSendQueue( get<0>( check ) );
