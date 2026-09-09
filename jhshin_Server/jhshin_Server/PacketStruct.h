@@ -2,11 +2,14 @@
 
 #include "RSDefine.h"
 
-#define CLIENT_PACKET( X ) \
-	X( PacketType_CLIENT_ECHO )
+#define CLIENT_PACKET( PACKET ) \
+	PACKET( PacketType_CLIENT_ECHO ) \
+	PACKET( PacketType_CLIENT_BROADCAST )
+	
 
-#define SERVER_PACKET( X ) \
-	X( PacketType_SERVER_ECHO )
+#define SERVER_PACKET( PACKET ) \
+	PACKET( PacketType_SERVER_ECHO ) \
+	PACKET( PacketType_SERVER_BROADCAST )
 
 #pragma pack(push, 1)
 
@@ -14,15 +17,15 @@ enum class PacketType : uint16
 {
 	PacketType_NULL = 0,
 
-#define X( name ) name,
-	CLIENT_PACKET( X )
-#undef X
+#define PACKET( name ) name,
+	CLIENT_PACKET( PACKET )
+#undef PACKET
 
 	PacketType_CLIENT_END = 99, // 여기까지 클라
 
-#define X( name ) name,
-	SERVER_PACKET( X )
-#undef X
+#define PACKET( name ) name,
+	SERVER_PACKET( PACKET )
+#undef PACKET
 
 	PacketType_MAX = 999,
 };
@@ -59,6 +62,23 @@ public:
 	void Set( char* text )
 	{
 		strncpy_s( m_text, sizeof( m_text), text, _TRUNCATE );
+	}
+};
+
+struct Client_Broadcast_Req
+{
+public:
+	char m_text[64];
+
+public:
+	Client_Broadcast_Req()
+	{
+		memset( m_text, 0, sizeof( m_text ) );
+	}
+
+	void Set( char* text )
+	{
+		strncpy_s( m_text, sizeof( m_text ), text, _TRUNCATE );
 	}
 };
 

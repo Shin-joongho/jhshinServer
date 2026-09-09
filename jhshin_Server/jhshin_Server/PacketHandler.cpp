@@ -2,9 +2,9 @@
 
 bool PacketHandler::Init()
 {
-#define X( name )  if( false == Register( PacketType::name, HANDLE_##name ) ) { return false; }
-	CLIENT_PACKET( X )
-#undef X
+#define PACKET( name )  if( false == Register( PacketType::name, HANDLE_##name ) ) { return false; }
+	CLIENT_PACKET( PACKET )
+#undef PACKET
 	return true;
 }
 
@@ -61,4 +61,20 @@ bool PacketHandler::HANDLE_PacketType_CLIENT_ECHO( const SessionDataRef& session
 	}
 
 	return true;
+}
+
+bool PacketHandler::HANDLE_PacketType_CLIENT_BROADCAST( const SessionDataRef& session, const char* bufferData, int bufferSize )
+{
+	Client_Broadcast_Req broadReq;
+
+	if( bufferSize != sizeof( broadReq ) )
+	{
+		return false;
+	}
+
+	memcpy( &broadReq, bufferData, bufferSize );
+
+
+
+	return false;
 }
