@@ -47,9 +47,10 @@ bool PacketHandler::HANDLE_PacketType_CLIENT_ECHO( const SessionDataRef& session
 		return false;
 	}
 
-	memcpy_s( &echoReq, sizeof( echoReq ), bufferData, bufferSize );
+	memcpy( &echoReq, bufferData, bufferSize );
 
 	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ECHO, (char*)&echoReq, sizeof( echoReq ) );
+
 	if( get<1>( check ) )
 	{
 		session->InsertSendQueue( get<0>( check ) );

@@ -27,30 +27,23 @@
 #include <thread>
 #include <vector>
 
+// 프로토콜 정의는 서버 헤더를 그대로 쓴다. 규격을 두 곳에 두면 반드시 어긋난다.
+//   g++ -std=c++17 -O2 -I <서버 소스 경로> LoadTestFast.cpp -o LoadTestFast.exe -lws2_32
+#include "PacketStruct.h"
+
 #pragma comment( lib, "ws2_32" )
 
-using uint16 = unsigned short;
-using int64  = long long;
+using int64 = long long;
 
-enum class PacketType : uint16
-{
-    PacketType_NULL = 0,
-    PacketType_Server,
-    PacketType_Client,
-};
-
-struct PacketID
-{
-    PacketType _type;
-    uint16     _size;
-};
-
-static_assert( sizeof( PacketID ) == 4, "PacketID 레이아웃이 서버와 다르다" );
+static_assert( sizeof( PacketID ) == 4, "PacketID 레이아웃이 바뀌었다" );
 
 static const char*          SERVER_IP   = "127.0.0.1";
 static const unsigned short SERVER_PORT = 27130;
 static const size_t         MAX_SAMPLES = 50000;
 static const size_t         IN_CAP      = 256 * 1024;
+
+// 서버 핸들러가 sizeof( Client_ECHO_Req ) 와 정확히 일치하는 바디만 받는다.
+static const int ECHO_BODY_SIZE = (int)sizeof( Client_ECHO_Req );
 
 static std::atomic<int>                      g_arrived{ 0 };
 static std::atomic<bool>                     g_go{ false };
@@ -127,7 +120,7 @@ struct Result
 static void AppendPacket( std::string& out, int bodySize )
 {
     PacketID h;
-    h._type = PacketType::PacketType_Client;
+    h._type = PacketType::PacketType_CLIENT_ECHO;
     h._size = (uint16)bodySize;
 
     const size_t base = out.size();
@@ -276,7 +269,7 @@ static void Worker( int connCount, int window, int bodySize, Result* out )
 
                     // 서버는 보낸 바디를 그대로 돌려준다. 크기가 다르면 스트림이 깨진 것.
                     if( h._size != (uint16)bodySize
-                        || h._type != PacketType::PacketType_Server )
+                        || h._type != PacketType::PacketType_SERVER_ECHO )
                     {
                         printf( "[불일치] type=%u size=%u (기대 type=1 size=%d)\n",
                                 (unsigned)h._type, (unsigned)h._size, bodySize );
@@ -336,10 +329,10 @@ int main( int argc, char** argv )
     const int connections = ( argc > 1 ) ? atoi( argv[1] ) : 200;
     const int seconds     = ( argc > 2 ) ? atoi( argv[2] ) : 10;
     const int window      = ( argc > 3 ) ? atoi( argv[3] ) : 16;
-    const int bodySize    = ( argc > 4 ) ? atoi( argv[4] ) : 64;
+    const int bodySize    = ECHO_BODY_SIZE;   // 서버 규격 고정
     const int threadCount = ( argc > 5 ) ? atoi( argv[5] ) : 8;
 
-    if( bodySize < 8 || threadCount < 1 || connections < threadCount )
+    if( threadCount < 1 || connections < threadCount )
     {
         printf( "인자 오류 (바디>=8, 스레드>=1, 연결수>=스레드수)\n" );
         return 1;

@@ -48,7 +48,7 @@ struct PacketID
 struct Client_ECHO_Req
 {
 public:
-	char m_text[100];
+	char m_text[64];
 
 public:
 	Client_ECHO_Req()

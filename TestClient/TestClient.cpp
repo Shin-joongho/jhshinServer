@@ -19,29 +19,28 @@
 #include <thread>
 #include <vector>
 
+// 프로토콜 정의는 서버 헤더를 그대로 쓴다. 규격을 두 곳에 두면 반드시 어긋난다.
+//   g++ -std=c++17 -O2 -I <서버 소스 경로> TestClient.cpp -o TestClient.exe -lws2_32
+#include "PacketStruct.h"
+
 #pragma comment( lib, "ws2_32" )
 
-using uint16 = unsigned short;
-
-// ---- 서버와 동일한 패킷 규격 (Buffer.h) --------------------------------
-
-enum class PacketType : uint16
-{
-    PacketType_NULL = 0,
-    PacketType_Server,
-    PacketType_Client,
-};
-
-struct PacketID
-{
-    PacketType _type;
-    uint16     _size;   // 헤더를 뺀 바디 크기
-};
-
-static_assert( sizeof( PacketID ) == 4, "PacketID 레이아웃이 서버와 다르다" );
+static_assert( sizeof( PacketID ) == 4, "PacketID 레이아웃이 바뀌었다" );
 
 static const char*          SERVER_IP   = "127.0.0.1";
 static const unsigned short SERVER_PORT = 27130;
+
+// 서버 핸들러는 sizeof( Client_ECHO_Req ) 와 정확히 일치하는 바디만 받는다.
+static const int ECHO_BODY_SIZE = (int)sizeof( Client_ECHO_Req );
+
+// 문자열을 Client_ECHO_Req 에 담아 고정 크기 바디로 만든다.
+static std::string MakeEchoBody( const char* text )
+{
+    Client_ECHO_Req req;              // 생성자가 0 으로 채운다
+    req.Set( (char*)text );
+
+    return std::string( (const char*)&req, sizeof( req ) );
+}
 
 // ---- 소켓 헬퍼 ---------------------------------------------------------
 
@@ -122,7 +121,7 @@ static bool RecvPacket( SOCKET s, PacketID& header, std::string& body )
 static std::string MakePacket( const std::string& body )
 {
     PacketID h;
-    h._type = PacketType::PacketType_Client;
+    h._type = PacketType::PacketType_CLIENT_ECHO;
     h._size = (uint16)body.size();
 
     std::string out;
@@ -143,7 +142,7 @@ static bool Test_Single()
         return false;
     }
 
-    const std::string body = "Hello Echo";
+    const std::string body = MakeEchoBody( "Hello Echo" );
     const std::string pkt  = MakePacket( body );
 
     bool ok = SendAll( s, pkt.data(), (int)pkt.size() );
@@ -183,8 +182,8 @@ static bool Test_Batched( int count )
         char buf[64];
         snprintf( buf, sizeof( buf ), "packet-%02d", i );
 
-        bodies.push_back( buf );
-        all += MakePacket( buf );
+        bodies.push_back( MakeEchoBody( buf ) );
+        all += MakePacket( bodies.back() );
     }
 
     printf( "    %d 개 패킷 %d bytes 를 send 한 번으로 전송\n", count, (int)all.size() );
@@ -231,7 +230,7 @@ static bool Test_Split()
         return false;
     }
 
-    const std::string body = "SplitAcrossTwoSends";
+    const std::string body = MakeEchoBody( "SplitAcrossTwoSends" );
     const std::string pkt  = MakePacket( body );
 
     const int cut = 2;   // 4바이트 헤더의 중간
@@ -268,7 +267,7 @@ static bool Test_Throughput( int count )
         return false;
     }
 
-    const std::string pkt = MakePacket( std::string( 64, 'x' ) );
+    const std::string pkt = MakePacket( MakeEchoBody( "throughput" ) );
 
     const auto start = std::chrono::steady_clock::now();
 
