@@ -31,6 +31,12 @@ void Room::PushJob( JobObjectRef jobObject )
 
 void Room::Enter( SessionDataRef session )
 {
+	if( session->IsConnected() )
+	{
+		return;
+	}
+
+	session->Connect();
 	session->SetRoomID( m_RoomID );
 	m_roomUser.insert( make_pair( session->GetSocket(), session ) );
 
@@ -50,6 +56,12 @@ void Room::Enter( SessionDataRef session )
 
 void Room::Leave( SessionDataRef session )
 {
+	if( false == session->IsConnected() )
+	{
+		return;
+	}
+
+	session->DisConnected();
 	session->SetRoomID( -1 );
 	m_roomUser.erase( session->GetSocket() );
 	ServiceManager::This()->CloseSession( session );

@@ -243,8 +243,9 @@ void SendObject::Execute( int transferByte )
 	if( transferByte <= 0 )
 	{
 		// 세션 종료
-
-		ServiceManager::This()->CloseSession( session );
+		shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
+		job_leave->SetSession( session );
+		RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
 
 		DWORD errCode = WSAGetLastError();
 		switch( errCode )

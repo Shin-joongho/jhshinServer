@@ -156,4 +156,5 @@ void SessionData::Reset()
 	m_NetAddress.Clear();
 	m_SendFlag = false;
 	m_RoomID = -1;
+	m_Connected = false;
 }

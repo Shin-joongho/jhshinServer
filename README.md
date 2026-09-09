@@ -1,8 +1,10 @@
 # jhshin_Server
 
-Windows IOCP 기반 게임 서버 네트워크 계층.
+Windows IOCP 기반 게임 서버 네트워크 계층과 룸 브로드캐스트.
 
-TCP 스트림에서 패킷 경계를 복원하고, 다중 워커 스레드 환경에서 세션 수명을 안전하게 관리하는 것을 목표로 합니다. 외부 네트워크 라이브러리 없이 Winsock2 위에서 직접 구현했습니다.
+TCP 스트림에서 패킷 경계를 복원하고, 다중 워커 스레드 환경에서 세션 수명을 안전하게 관리하며, 룸 단위 브로드캐스트를 공유 락 없이 처리하는 것을 목표로 합니다. 외부 네트워크 라이브러리 없이 Winsock2 위에서 직접 구현했습니다.
+
+설계 근거는 아래 [설계 판단](#설계-판단), 성능 측정과 그 과정에서 기각한 가설들은 [`TestClient/RESULTS.md`](TestClient/RESULTS.md)에 있습니다.
 
 - 언어/환경: C++20, Visual Studio 2022 (v143), x64
 - 의존성: 없음 (Winsock2 / mswsock)
@@ -13,15 +15,19 @@ TCP 스트림에서 패킷 경계를 복원하고, 다중 워커 스레드 환�
 
 ```
 main
- └ ServiceManager ── 서비스용 IOCP (워커 N)
-     │                세션 맵, SendBuffer 풀
-     │
-     ├ ListenManager ── 리슨 소켓, AcceptEx 사전 게시
-     │
-     └ SessionManager ── 세션 풀, 대기 큐
-           └ SessionData ── 소켓, RecvBuffer, 송신 큐
-                 ├ RecvObject (OVERLAPPED)
-                 └ SendObject (OVERLAPPED)
+ ├ ServiceManager ── 서비스용 IOCP (워커 N)
+ │   │                세션 맵, SendBuffer 풀
+ │   │
+ │   ├ ListenManager ── 리슨 소켓, AcceptEx 사전 게시
+ │   │
+ │   └ SessionManager ── 세션 풀, 대기 큐
+ │         └ SessionData ── 소켓, RecvBuffer, 송신 큐
+ │               ├ RecvObject (OVERLAPPED)
+ │               └ SendObject (OVERLAPPED)
+ │
+ └ RoomManager ───── 룸 N개, 룸마다 전용 스레드 1개
+       └ Room ────── 입장자 맵, 브로드캐스트
+             └ JobQueue ── JobObject 큐 (Enter / Leave / Broadcast)
 ```
 
 | 파일 | 역할 |
@@ -33,8 +39,16 @@ main
 | `SessionData.*` | 한 연결의 상태. 수신 처리, 송신 큐 |
 | `Buffer.*` | `RecvBuffer`(수신 누적/조립), `SendBuffer`(송신 청크) |
 | `ObjectPool.h` | 고정 크기 객체 풀 |
+| `PacketStruct.h` | 프로토콜 정의. X-매크로로 `PacketType` enum 과 핸들러 등록을 한 목록에서 생성 |
+| `PacketHandler.*` | 함수 포인터 배열 기반 디스패치 |
+| `RoomManager.*` | 룸 소유, 룸별 스레드 기동, 잡 라우팅 |
+| `Room.*` | 한 룸의 상태. 입장자 맵, 브로드캐스트 |
+| `JobQueue.*` | 룸 하나의 잡 큐 (mutex + condition_variable) |
+| `JobObject.*` | 잡 기반 클래스와 `Job_Enter` / `Job_Leave` / `Job_Broadcast` |
 
 `IOCPObject`가 `OVERLAPPED`를 상속하고 가상 `Execute()`를 가집니다. 워커는 `GetQueuedCompletionStatus`로 받은 `LPOVERLAPPED`를 `IOCPObject*`로 캐스팅해 `Execute()`만 호출하면 되므로, IO 종류가 늘어도 워커 코드는 바뀌지 않습니다.
+
+수신된 패킷은 IOCP 워커에서 `PacketHandler::Dispatch`로 넘어갑니다. 룸 상태를 건드리는 요청(입장/퇴장/브로드캐스트)은 워커가 직접 처리하지 않고 잡으로 만들어 해당 룸의 큐에 넣고, 룸 스레드가 꺼내서 실행합니다. **룸 상태는 그 룸의 스레드만 만지므로 `Room` 내부에는 락이 없습니다.**
 
 ---
 
@@ -217,11 +231,21 @@ struct SendChunk
 
 `vector<T>::resize`는 원소의 복사 또는 이동을 요구하는데, `std::mutex`를 멤버로 가진 타입(`SessionData`의 송신 락)은 둘 다 불가능합니다. `make_unique<T[]>(n)`은 기본 생성만 요구하므로 제약이 없고, 한 번 할당하면 재할당되지 않아 **나눠준 포인터의 안정성이 타입 차원에서 보장**됩니다.
 
+### 9. 룸 상태 — 공유 락 대신 스레드 소유
+
+룸의 입장자 맵(`m_roomUser`)에는 락이 없습니다. 대신 **룸마다 스레드를 하나 두고, 그 룸의 상태는 그 스레드만 만집니다.**
+
+IOCP 워커가 `CLIENT_ENTER` / `CLIENT_BROADCAST` / `CLIENT_LEAVE`를 받으면 직접 처리하지 않고 `JobObject`로 만들어 해당 룸의 큐에 넣습니다. 룸 스레드가 `JobQueue::PopAll`로 꺼내 실행합니다.
+
+**공유 락을 쓰지 않은 이유는 브로드캐스트가 O(N) 구간이기 때문입니다.** 브로드캐스트 1회는 룸 인원 수만큼 `InsertSendQueue`를 부릅니다. 이걸 락으로 감싸면 룸 전체가 그 시간 동안 멈추고, 워커 8개가 같은 락에서 줄을 섭니다. 스레드 소유로 바꾸면 락 획득 자체가 없어지고, 룸이 여러 개면 서로 독립적으로 돕니다.
+
+`JobQueue::PopAll`은 큐를 하나씩 꺼내지 않고 `swap`으로 통째로 가져옵니다. 락을 잡는 횟수가 잡 개수가 아니라 배치 개수가 됩니다.
+
+**대가는 룸 하나가 단일 스레드라는 것입니다.** 부하 측정에서 이게 그대로 나타납니다 — 병목은 CPU가 아니라 룸당 순회이고, 초당 메시지 수보다 룸 크기가 먼저 걸립니다. 같은 유출량(약 12만/초)에서 팬아웃 11인 구성은 p50 0.37 ms, 팬아웃 24인 구성은 244 ms 입니다. 룸을 더 잘게 쪼개는 것 외에는 이 구조로 해결되지 않습니다. (RESULTS.md 13절)
+
 ---
 
 ## 검증
-
-다음 시나리오로 확인했습니다. (테스트 하니스는 아직 저장소에 포함되지 않았습니다 — 아래 TODO 참고)
 
 **패킷 재조립**
 
@@ -237,11 +261,42 @@ struct SendChunk
 
 **악성 입력**: `_size = 60000`을 64바이트 버퍼에 반복 전송 — 버퍼 가용 공간이 회복되며 점유되지 않음.
 
-**실서버 동작** (세션 풀 3, 접속 5):
+**실서버 동작** — 대기 큐 경로를 강제하기 위해 세션 풀을 3으로 줄이고 5개를 접속시킨 구성 (현재 기본값은 10,000):
 - 접속 3개 처리 후 나머지는 대기 큐, 연결 종료 시 대기 중이던 `AcceptEx` 재무장 확인
 - 클라이언트가 4패킷을 한 번의 `send()`로 전송 → 완료 통지 1회에서 4개 모두 처리
 - 1바이트씩 전송 → 정확히 조립
 - 에코 응답 왕복 확인. 연속 요청 시 응답이 하나의 `WSASend`로 묶여 나가는 것 확인
+
+**룸 / 브로드캐스트** (`TestClient/LoadTestRoom.exe verify`, 연결 16)
+
+| 시나리오 | 결과 |
+|---|---|
+| ENTER → `SERVER_ENTER` ack 로 roomID 수신 | 16/16 |
+| 같은 룸의 나머지 전원이 브로드캐스트 수신, 페이로드 일치 | 정상 |
+| 송신자 본인은 수신하지 않음 | 정상 |
+| **다른 룸으로 누출 없음** | 정상 |
+| 연속 100건 브로드캐스트, 전 연결 프레이밍 | 정상 |
+
+부하를 5회 돌린 뒤 다시 실행해도 6/6 통과합니다.
+
+**부하** — 측정 결과와 방법은 [`TestClient/RESULTS.md`](TestClient/RESULTS.md)에 13개 절로 정리했습니다. 요약하면
+
+- ECHO 경로: 왕복 661,169/초, p50 0.499 ms (연결 50, 논리 프로세서 6 머신, 루프백)
+- 브로드캐스트 경로: 유출 약 104,000 메시지/초까지 전달률 100%, p50 1.07 ms
+- 브로드캐스트의 병목은 CPU가 아니라 **룸당 단일 스레드의 동기 순회**. 초당 메시지 수보다 룸 크기가 먼저 걸립니다
+
+측정 도구 자신이 병목이었던 경우(8절), 변수를 둘 동시에 바꿔 결과를 해석할 수 없던 경우(10~11절), 클라이언트 버그를 서버 지연으로 오독한 경우(13절)를 기각 과정까지 함께 적어두었습니다.
+
+**테스트 하니스**
+
+| 파일 | 용도 |
+|---|---|
+| `TestClient/TestClient.cpp` | 패킷 재조립 정확성 (분할/병합/fuzz) |
+| `TestClient/LoadTest.cpp` | 연결당 스레드 1개 방식 부하 클라이언트 |
+| `TestClient/LoadTestFast.cpp` | 논블로킹 + `WSAPoll` 경량 부하 클라이언트 (ECHO) |
+| `TestClient/LoadTestRoom.cpp` | 룸/브로드캐스트 정확성 + 부하 (`verify` / `load` 모드) |
+
+세 부하 클라이언트 모두 서버의 `PacketStruct.h`를 직접 include 합니다. 규격을 두 곳에 두면 반드시 어긋나기 때문입니다.
 
 ---
 
@@ -256,23 +311,32 @@ struct SendChunk
 - 세션 풀 고갈 시 대기 큐
 - 송신 큐 + 게시 직렬화 + 배칭
 - 송신 청크 풀 + 참조 계수
+- 패킷 핸들러 / 디스패치 — X-매크로로 enum 과 등록을 한 목록에서 생성, 함수 포인터 배열로 분기
+- 룸 + 잡 큐 — 룸마다 스레드 1개, 룸 상태는 그 스레드만 접근 (락 없음)
+- 브로드캐스트 — `MakeSendPacket` 1회로 만든 청크를 같은 룸의 N 세션 큐에 배포
+- 세션 종료 시 룸에서 제거 (모든 종료 경로가 `Job_Leave`를 해당 룸에 게시)
+- 프로세스 자기 CPU 사용량 모니터 스레드
 
 **미구현**
 
-- 패킷 핸들러 / 디스패치 (현재 에코 테스트 코드가 자리를 차지)
-- 브로드캐스트 (구조는 준비됨, 호출 경로 미작성)
 - 부분 전송(`transferByte < 요청량`) 처리
-- Graceful shutdown — 워커가 `while(true)`, `Join()`이 반환하지 않음
-- 로깅
-- `ConfigManager` 미연결 — 포트 27130 하드코딩, 스레드/accept 수는 `main`의 리터럴
-- 세션 풀 3, 송신 버퍼 풀 10은 **테스트용 고정치**
+- Graceful shutdown — `JobQueue::Stop()`은 호출부가 없고, `RoomManager::Work`의 `while(true)`가 `StartJob()`을 감싸고 있어 stop 으로 리턴해도 다시 들어감. `Room::LeaveAll()`도 비어 있음
+- 로깅 — `cout` 직접 사용
+- `ConfigManager` 미연결 — 포트 27130 하드코딩, 워커/accept/룸 수는 `main`의 리터럴 (`Initalize( 8, 1, 128 )`, `roomManager->Initalize( 5 )`)
+- DB, 인증, 재접속, 프로토콜 버저닝 — 이 저장소의 범위 밖
 
 **알려진 정리 대상**
 
-- `Buffer.h/.cpp` 인코딩이 CP949 — 프로젝트가 `/utf-8`로 컴파일되어 경고 다수
+- **`SendObject::Execute`의 송신 실패 경로(`IOCP.cpp:247`)만 `CloseSession`을 직접 호출합니다.** 다른 종료 경로는 모두 `Job_Leave`를 거쳐 룸에서 제거되는데 여기만 빠져 있어, 송신 중 끊긴 세션이 `m_roomUser`에 남습니다. 소켓 핸들이 재사용되면 무관한 연결로 브로드캐스트가 나갈 수 있습니다 (RESULTS.md 13절 「발견 1」과 동일한 경로)
+- 같은 세션에 대해 `Job_Leave`가 두 번 게시될 수 있습니다 (수신 경로와 송신 경로가 동시에 실패하는 경우). `Room::Leave`가 두 번 돌면 `closesocket()`도 두 번 불립니다
+- `PushJobByRooms`가 인덱스 범위 밖일 때 잡 종류와 무관하게 세션을 닫습니다. BROADCAST 핸들러도 `GetRoomID()`를 넘기므로 ENTER 전에 BROADCAST를 보내면 연결이 끊깁니다
+- `Room.h` 인코딩이 CP949 — 프로젝트가 `/utf-8`로 컴파일되어 경고 다수. 룸 관련 신규 파일들(`JobObject.*`, `JobQueue.h`, `RoomManager.*`, `Room.cpp`)은 BOM 없는 ASCII 로, 기존 파일(UTF-8 BOM)과 다릅니다
+- `Room::BroadCast`의 `for( auto session : m_roomUser )`가 `auto&`가 아니라 멤버마다 `shared_ptr`를 복사합니다
+- 룸 배정에 `rand() % 5`를 씁니다. MSVC `rand()`는 스레드마다 독립 상태를 시드 1로 시작하므로 IOCP 워커들이 같은 수열을 냅니다 — 실제로 분포가 고르지 않습니다
 - 위치 변수 `uint16` → `int32` (64KB 초과 버퍼에서 래핑)
-- `ServiceManager` / `ListenManager` / `SessionManager` 싱글톤 상호 참조 — 단위 테스트 불가
+- `ServiceManager` / `ListenManager` / `SessionManager` / `RoomManager` 싱글톤 상호 참조 — 단위 테스트 불가
 - 반환값이 복수 의미를 겸하는 곳 (`Accept`의 `bool`이 "게시됨"과 "대기 등록됨"을 구분하지 못함)
+- `RecvObject::Execute`가 `SessionData::Recv`의 false 를 모두 `"PakcetHandler Error"`로 출력합니다. `Recv`는 마지막이 `return RecvStart()`라 **WSARecv 재등록 실패에도 false**가 나오므로, 정상 종료가 패킷 오류로 찍힙니다 (오타도 포함)
 
 ---
 
@@ -284,16 +348,30 @@ jhshin_Server/jhshin_Server.sln 을 Visual Studio 2022 로 열고 x64 빌드
 
 기본 포트 `27130`. 실행하면 리슨을 시작하고 `AcceptEx`를 미리 게시합니다.
 
-`main`의 인자는 `Initalize( 서비스 워커 수, 리슨 워커 수, accept 사전 게시 수 )` 입니다.
+`main`의 인자는 `ServiceManager::Initalize( 서비스 워커 수, 리슨 워커 수, accept 사전 게시 수 )`,
+`RoomManager::Initalize( 룸 수 )` 입니다. 현재 각각 `( 8, 1, 128 )`, `( 5 )`.
+
+세션 풀 10,000 / SendBuffer 청크 1,024개는 `ServiceManager::Initalize` 안에 고정돼 있습니다.
+
+**테스트 클라이언트**
+
+```
+cl /nologo /utf-8 /std:c++20 /O2 /EHsc /I jhshin_Server\jhshin_Server ^
+   TestClient\LoadTestRoom.cpp /Fe:LoadTestRoom.exe ws2_32.lib
+
+LoadTestRoom.exe verify
+LoadTestRoom.exe load [연결수] [지속초] [초당송신/연결] [스레드수]
+```
 
 ---
 
 ## TODO
 
-1. 패킷 핸들러 및 디스패치
-2. 브로드캐스트 경로 (`MakeSendPacket` 1회 → N 세션 큐에 배포)
-3. 테스트 하니스를 `tests/` 로 편입 (위 검증 시나리오 + fuzz)
-4. 부하 테스트용 더미 클라이언트, 동접/처리량/지연 측정
-5. Graceful shutdown (`PostQueuedCompletionStatus` 기반 워커 종료)
-6. `ConfigManager` 연결, 고정치 제거
-7. 싱글톤 상호 참조 정리
+1. **`SendObject::Execute`의 송신 실패 경로를 `Job_Leave`로 통일** — 위 「알려진 정리 대상」 첫 항목
+2. Graceful shutdown (`JobQueue::Stop()` 호출 경로 + `PostQueuedCompletionStatus` 기반 워커 종료)
+3. `Job_Leave` 중복 게시 방지 (세션에 종료 플래그 1회 전이)
+4. 테스트 하니스를 `tests/` 로 편입, 빌드 스크립트 추가
+5. `ConfigManager` 연결, 고정치 제거
+6. 룸 배정을 `rand()` 대신 명시적 정책으로 (라운드로빈 또는 클라이언트 지정)
+7. 로깅 도입, `"PakcetHandler Error"` 메시지 분리
+8. 싱글톤 상호 참조 정리

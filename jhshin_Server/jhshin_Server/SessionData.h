@@ -37,6 +37,10 @@ public:
 
 	void Reset();
 
+	bool IsConnected() { return m_Connected; }
+	void Connect() { m_Connected = true; }
+	void DisConnected() { m_Connected = false; }
+
 private:
 	SOCKET m_Socket;
 	NetAddress m_NetAddress;
@@ -49,5 +53,7 @@ private:
 	bool m_SendFlag;
 
 	int m_RoomID;
+
+	atomic<bool> m_Connected;
 };
 
