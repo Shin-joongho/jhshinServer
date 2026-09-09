@@ -155,5 +155,5 @@ void SessionData::Reset()
 	m_Socket = INVALID_SOCKET;
 	m_NetAddress.Clear();
 	m_SendFlag = false;
-	m_RoomID = 0;
+	m_RoomID = -1;
 }

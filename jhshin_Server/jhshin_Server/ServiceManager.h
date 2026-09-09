@@ -1,10 +1,11 @@
 ﻿#pragma once
 
 #include "IOCP.h"
-#include "RSDefine.h"
 #include "SocketUtill.h"
 #include "SingletonTemplate.h"
 #include "ObjectPool.h"
+
+#include "RSDefine.h"
 
 class ServiceManager : public SingleT< ServiceManager >
 {

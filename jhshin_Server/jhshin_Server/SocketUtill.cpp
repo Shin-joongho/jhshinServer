@@ -56,3 +56,8 @@ bool SocketUtill::SetOptions( SOCKET& socket, int OptionBit )
 
     return Result;
 }
+
+void SocketUtill::CleanUp()
+{
+    WSACleanup();
+}

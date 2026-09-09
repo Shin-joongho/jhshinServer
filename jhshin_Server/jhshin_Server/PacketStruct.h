@@ -4,12 +4,16 @@
 
 #define CLIENT_PACKET( PACKET ) \
 	PACKET( PacketType_CLIENT_ECHO ) \
-	PACKET( PacketType_CLIENT_BROADCAST )
+	PACKET( PacketType_CLIENT_BROADCAST ) \
+	PACKET( PacketType_CLIENT_ENTER ) \
+	PACKET( PacketType_CLIENT_LEAVE )
 	
 
 #define SERVER_PACKET( PACKET ) \
 	PACKET( PacketType_SERVER_ECHO ) \
-	PACKET( PacketType_SERVER_BROADCAST )
+	PACKET( PacketType_SERVER_BROADCAST ) \
+	PACKET( PacketType_SERVER_ENTER ) \
+	PACKET( PacketType_SERVER_LEAVE )
 
 #pragma pack(push, 1)
 
@@ -67,7 +71,7 @@ public:
 
 struct Client_Broadcast_Req
 {
-public:
+private:
 	char m_text[64];
 
 public:
@@ -80,6 +84,23 @@ public:
 	{
 		strncpy_s( m_text, sizeof( m_text ), text, _TRUNCATE );
 	}
+
+	char* Get() { return m_text; }
+};
+
+struct Server_Enter_Ack
+{
+private:
+	int m_roomID;
+
+public:
+	Server_Enter_Ack()
+	{
+		m_roomID = 0;
+	}
+
+	void Set( int roomID ) { m_roomID = roomID; }
+	int Get() { return m_roomID; }
 };
 
 #pragma pack(pop)

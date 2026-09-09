@@ -12,6 +12,7 @@
 #include <queue>
 #include <cstring>
 
+// namespace때문에 가장 마지막에 include
 using namespace std;
 
 
@@ -20,5 +21,6 @@ using uint16 = unsigned __int16;
 using SessionDataRef = shared_ptr<class SessionData>;
 using SendBufferRef = shared_ptr<class SendBuffer>;
 using JobObjectRef = shared_ptr<class JobObject>;
+using RoomRef = shared_ptr<class Room>;
 
 const int PACKET_SIZE = 4096;

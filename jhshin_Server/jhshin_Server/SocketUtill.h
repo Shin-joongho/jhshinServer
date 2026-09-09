@@ -26,6 +26,8 @@ public:
 	static SOCKET MakeSocket();
 	static bool SetOptions( SOCKET& socket, int OptionBit );
 
+	static void CleanUp();
+
 };
 
 class NetAddress

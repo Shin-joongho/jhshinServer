@@ -1,4 +1,5 @@
 ﻿#include "PacketHandler.h"
+#include "RoomManager.h"
 
 bool PacketHandler::Init()
 {
@@ -73,8 +74,31 @@ bool PacketHandler::HANDLE_PacketType_CLIENT_BROADCAST( const SessionDataRef& se
 	}
 
 	memcpy( &broadReq, bufferData, bufferSize );
+	shared_ptr<Job_Broadcast> job_broadcast = make_shared<Job_Broadcast>();
+	job_broadcast->SetSession( session );
+	job_broadcast->SetReq( broadReq );
 
 	// 룸 메니저를 ID로 찾아서 잡큐에 넣기
+	RoomManager::This()->PushJobByRooms( job_broadcast, session->GetRoomID() );
 
+	return true;
+}
+
+bool PacketHandler::HANDLE_PacketType_CLIENT_ENTER( const SessionDataRef& session, const char* bufferData, int bufferSize )
+{
+	shared_ptr<Job_Enter> job_enter = make_shared<Job_Enter>();
+	job_enter->SetSession( session );
+
+	int i = rand() % 5;
+	RoomManager::This()->PushJobByRooms( job_enter, i );
+	return true;
+}
+
+bool PacketHandler::HANDLE_PacketType_CLIENT_LEAVE( const SessionDataRef& session, const char* bufferData, int bufferSize )
+{
+	shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
+	job_leave->SetSession( session );
+
+	RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
 	return false;
 }

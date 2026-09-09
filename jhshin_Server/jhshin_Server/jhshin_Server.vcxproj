@@ -141,6 +141,7 @@
     <ClCompile Include="PacketHandler.cpp" />
     <ClCompile Include="PacketStruct.cpp" />
     <ClCompile Include="Room.cpp" />
+    <ClCompile Include="RoomManager.cpp" />
     <ClCompile Include="ServiceManager.cpp" />
     <ClCompile Include="SessionData.cpp" />
     <ClCompile Include="SessionManager.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="PacketHandler.h" />
     <ClInclude Include="PacketStruct.h" />
     <ClInclude Include="Room.h" />
+    <ClInclude Include="RoomManager.h" />
     <ClInclude Include="RSDefine.h" />
     <ClInclude Include="ServiceManager.h" />
     <ClInclude Include="SessionData.h" />

@@ -1,5 +1,8 @@
 #include "Room.h"
 
+#include "SessionData.h"
+#include "ServiceManager.h"
+
 void Room::StartJob()
 {
 	queue<JobObjectRef> jobqueue;
@@ -21,27 +24,57 @@ void Room::StartJob()
 	}
 }
 
+void Room::PushJob( JobObjectRef jobObject )
+{
+	m_jobQueue.Push( jobObject );
+}
+
 void Room::Enter( SessionDataRef session )
 {
+	session->SetRoomID( m_RoomID );
 	m_roomUser.insert( make_pair( session->GetSocket(), session ) );
+
+	Server_Enter_Ack packet;
+	packet.Set( m_RoomID );
+	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ENTER, (char*)&packet, sizeof( packet ) );
+	if( get<1>( check ) )
+	{
+		session->InsertSendQueue( get<0>( check ) );
+	}
+	else
+	{
+		cout << "[Error] MakeSendPacket - SendBuffer pool exhausted" << endl;
+	}
+
 }
 
 void Room::Leave( SessionDataRef session )
 {
+	session->SetRoomID( -1 );
 	m_roomUser.erase( session->GetSocket() );
 	ServiceManager::This()->CloseSession( session );
 }
 
+void Room::LeaveAll()
+{
+}
+
 void Room::BroadCast( SessionDataRef broadSession, Client_Broadcast_Req& packet )
 {
-	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ECHO, ( char* )&packet, sizeof( packet ) );
-
-	for( auto session : m_roomUser )
+	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_BROADCAST, ( char* )&packet, sizeof( packet ) );
+	if( get<1>( check ) )
 	{
-		if( session.second == broadSession )
+		for( auto session : m_roomUser )
 		{
-			continue;
+			if( session.second == broadSession )
+			{
+				continue;
+			}
+			session.second->InsertSendQueue( get<0>( check ) );
 		}
-		session.second->InsertSendQueue( get<0>( check ) );
+	}
+	else
+	{
+		cout << "[Error] MakeSendPacket - SendBuffer pool exhausted" << endl;
 	}
 }

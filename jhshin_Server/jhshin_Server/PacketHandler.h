@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "RSDefine.h"
 #include "Buffer.h"
 #include "PacketStruct.h"
 #include "SessionData.h"
+#include "RSDefine.h"
 
 using PacketHandlerFunc = bool ( * )( const SessionDataRef& session, const char* bufferData, int bufferSize );
 #define REGISTER_HANDLE( packettype ) Register( PacketType::packettype, HANDLE_##packettype );
@@ -19,6 +19,10 @@ public:
 
 	static bool HANDLE_PacketType_CLIENT_ECHO( const SessionDataRef& session, const char* bufferData, int bufferSize );
 	static bool HANDLE_PacketType_CLIENT_BROADCAST( const SessionDataRef& session, const char* bufferData, int bufferSize );
+	
+	static bool HANDLE_PacketType_CLIENT_ENTER( const SessionDataRef& session, const char* bufferData, int bufferSize );
+	static bool HANDLE_PacketType_CLIENT_LEAVE( const SessionDataRef& session, const char* bufferData, int bufferSize );
+
 
 private:
 	inline static PacketHandlerFunc m_PacketHandle[(int)PacketType::PacketType_MAX] = {};

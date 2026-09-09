@@ -24,7 +24,7 @@ public:
 	}
 
 	int GetRoomID() { return m_RoomID; }
-	void SetRoomID( int roomID ) { m_RoomID = roomID }
+	void SetRoomID( int roomID ) { m_RoomID = roomID; }
 
 	RecvObject& GetRecvObject() { return m_Recv; }
 	SendObject& GetSendObject() { return m_Send; }

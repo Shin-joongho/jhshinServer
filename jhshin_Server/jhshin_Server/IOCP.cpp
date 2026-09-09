@@ -3,6 +3,7 @@
 #include "ListenManager.h"
 #include "ServiceManager.h"
 #include "SessionData.h"
+#include "RoomManager.h"
 #include "SocketUtill.h"
 
 IOCP::IOCP()
@@ -89,7 +90,10 @@ void IOCP::Worker( IOCP* thisIOCP )
 					if( false == session->RecvStart() )
 					{
 						// 룸에서 지우기
-						ServiceManager::This()->CloseSession( session );
+						shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
+						job_leave->SetSession( session );
+
+						RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
 					}
 				}
 			}
@@ -101,7 +105,10 @@ void IOCP::Worker( IOCP* thisIOCP )
 				if( session )
 				{
 					// 룸에서 지우기
-					ServiceManager::This()->CloseSession( session );
+					shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
+					job_leave->SetSession( session );
+
+					RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
 				}
 			}
 		}
@@ -118,7 +125,9 @@ void IOCP::Join()
 		}
 
 		if( t->joinable() )
+		{
 			t->join();
+		}
 
 		delete t;
 	}
@@ -186,7 +195,10 @@ void RecvObject::Execute( int transferByte )
 	{
 		// 종료 처리 추가
 		// 룸에서 지우기
-		ServiceManager::This()->CloseSession( session );
+		shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
+		job_leave->SetSession( session );
+
+		RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
 		ReleaseSession();
 
 		DWORD errCode = WSAGetLastError();
@@ -205,7 +217,11 @@ void RecvObject::Execute( int transferByte )
 	if( false == session->Recv( transferByte ) )
 	{
 		cout << "PakcetHandler Error " << endl;
-		ServiceManager::This()->CloseSession( session );
+		shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
+		job_leave->SetSession( session );
+
+		RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
+		ReleaseSession();
 	}
 }
 

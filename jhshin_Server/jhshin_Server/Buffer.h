@@ -1,7 +1,8 @@
 ﻿#pragma once
 
-#include "RSDefine.h"
 #include "PacketStruct.h"
+
+#include "RSDefine.h"
 
 const uint16 PacketID_SIZE = sizeof( PacketID );
 

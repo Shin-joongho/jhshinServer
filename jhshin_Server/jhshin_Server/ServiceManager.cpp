@@ -10,7 +10,7 @@
 // 각 호출하는 스레드에서 마지막으로 사용한 SendBuffer를 가지고 요청오면 해당 버퍼에서 청크를 꺼내 사용
 // 각 TLS에 접근하는건 해당 스레드 뿐이니 락 필요없고
 // 풀에서 가져올때만 내부적인 락 사용
-thread_local SendBufferRef LSendBuffer;
+thread_local SendBufferRef LSendBuffer = nullptr;
 
 bool ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount )
 {
