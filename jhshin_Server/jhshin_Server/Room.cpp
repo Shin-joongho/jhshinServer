@@ -21,6 +21,17 @@ void Room::StartJob()
 	}
 }
 
+void Room::Enter( SessionDataRef session )
+{
+	m_roomUser.insert( make_pair( session->GetSocket(), session ) );
+}
+
+void Room::Leave( SessionDataRef session )
+{
+	m_roomUser.erase( session->GetSocket() );
+	ServiceManager::This()->CloseSession( session );
+}
+
 void Room::BroadCast( SessionDataRef broadSession, Client_Broadcast_Req& packet )
 {
 	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ECHO, ( char* )&packet, sizeof( packet ) );

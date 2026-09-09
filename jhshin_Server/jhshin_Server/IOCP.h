@@ -34,6 +34,7 @@ public:
 	void ReleaseSession() { m_Session = nullptr; }
 
 protected:
+	// 여기 포인터로 받아야할듯
 	SessionDataRef m_Session;
 
 private:

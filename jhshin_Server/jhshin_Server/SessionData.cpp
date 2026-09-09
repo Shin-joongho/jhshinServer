@@ -61,10 +61,10 @@ void SessionData::InsertSendQueue( SendChunk sendChunk )
 		lock_guard<mutex> lg( m_SendLock );
 		m_SendQueue.push( sendChunk );
 
-		if( false == SendFlag )
+		if( false == m_SendFlag )
 		{
 			check = true;
-			SendFlag = true;
+			m_SendFlag = true;
 		}
 	}
 
@@ -99,7 +99,7 @@ bool SessionData::Send()
 		lock_guard<mutex> lg( m_SendLock );
 		if( m_Send.Empty() )
 		{
-			SendFlag = false;
+			m_SendFlag = false;
 			return true;
 		}
 	}
@@ -116,7 +116,7 @@ bool SessionData::Send()
 			m_Send.Clear();
 			{
 				lock_guard<mutex> lg( m_SendLock );
-				SendFlag = false;
+				m_SendFlag = false;
 			}
 			
 			return false;
@@ -134,7 +134,7 @@ void SessionData::CheckSendComplete()
 		lock_guard<mutex> lg( m_SendLock );
 		if( m_SendQueue.empty() )
 		{
-			SendFlag = false;
+			m_SendFlag = false;
 		}
 		else
 		{
@@ -154,5 +154,6 @@ void SessionData::Reset()
 	m_Recv.Initalize();
 	m_Socket = INVALID_SOCKET;
 	m_NetAddress.Clear();
-	SendFlag = false;
+	m_SendFlag = false;
+	m_RoomID = 0;
 }

@@ -88,6 +88,7 @@ void IOCP::Worker( IOCP* thisIOCP )
 					iocpObject->SetSession( nullptr );
 					if( false == session->RecvStart() )
 					{
+						// 룸에서 지우기
 						ServiceManager::This()->CloseSession( session );
 					}
 				}
@@ -99,6 +100,7 @@ void IOCP::Worker( IOCP* thisIOCP )
 				sendObject->Clear();
 				if( session )
 				{
+					// 룸에서 지우기
 					ServiceManager::This()->CloseSession( session );
 				}
 			}
@@ -183,6 +185,7 @@ void RecvObject::Execute( int transferByte )
 	if( transferByte <= 0 )
 	{
 		// 종료 처리 추가
+		// 룸에서 지우기
 		ServiceManager::This()->CloseSession( session );
 		ReleaseSession();
 

@@ -74,7 +74,7 @@ bool PacketHandler::HANDLE_PacketType_CLIENT_BROADCAST( const SessionDataRef& se
 
 	memcpy( &broadReq, bufferData, bufferSize );
 
-
+	// 룸 메니저를 ID로 찾아서 잡큐에 넣기
 
 	return false;
 }

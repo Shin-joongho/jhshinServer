@@ -13,6 +13,8 @@ public:
 
 	void StartJob();
 
+	void Enter( SessionDataRef session );
+	void Leave( SessionDataRef session );
 	void BroadCast( SessionDataRef broadSession, Client_Broadcast_Req& packet );
 
 private:

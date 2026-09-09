@@ -133,11 +133,14 @@
     <ClCompile Include="ConfigManager.cpp" />
     <ClCompile Include="IOCP.cpp" />
     <ClCompile Include="jhshin_Server.cpp" />
+    <ClCompile Include="JobObject.cpp" />
+    <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="ListenManager.cpp" />
     <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="PacketHandler.cpp" />
     <ClCompile Include="PacketStruct.cpp" />
+    <ClCompile Include="Room.cpp" />
     <ClCompile Include="ServiceManager.cpp" />
     <ClCompile Include="SessionData.cpp" />
     <ClCompile Include="SessionManager.cpp" />
@@ -146,11 +149,14 @@
   <ItemGroup>
     <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="IOCP.h" />
+    <ClInclude Include="JobObject.h" />
+    <ClInclude Include="JobQueue.h" />
     <ClInclude Include="ListenManager.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="PacketHandler.h" />
     <ClInclude Include="PacketStruct.h" />
+    <ClInclude Include="Room.h" />
     <ClInclude Include="RSDefine.h" />
     <ClInclude Include="ServiceManager.h" />
     <ClInclude Include="SessionData.h" />

@@ -23,6 +23,9 @@ public:
 		m_Socket = Socket;
 	}
 
+	int GetRoomID() { return m_RoomID; }
+	void SetRoomID( int roomID ) { m_RoomID = roomID }
+
 	RecvObject& GetRecvObject() { return m_Recv; }
 	SendObject& GetSendObject() { return m_Send; }
 	bool Recv( int transferByte );
@@ -43,6 +46,8 @@ private:
 	mutex m_SendLock;
 	queue<SendChunk> m_SendQueue;
 	SendObject m_Send;
-	bool SendFlag;
+	bool m_SendFlag;
+
+	int m_RoomID;
 };
 

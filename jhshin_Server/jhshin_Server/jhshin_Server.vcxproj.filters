@@ -57,6 +57,15 @@
     <ClCompile Include="PacketStruct.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="JobQueue.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="JobObject.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Room.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RSDefine.h">
@@ -96,6 +105,15 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="PacketStruct.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="JobQueue.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="JobObject.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Room.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
