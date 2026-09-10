@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "JobQueue.h"
 #include "SocketUtill.h"
@@ -24,7 +24,7 @@ public:
 	void SetRoomID( int roomID ) { m_RoomID = roomID; }
 
 public:
-	// Àâ¿¡¼­¸¸ ½ÇÇàµÉ ÇÔ¼ö
+	// ì¡ì—ì„œë§Œ ì‹¤í–‰ë  í•¨ìˆ˜
 	void Enter( SessionDataRef session );
 	void Leave( SessionDataRef session );
 	void LeaveAll();
