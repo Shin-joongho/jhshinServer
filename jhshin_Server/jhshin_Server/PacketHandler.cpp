@@ -100,5 +100,5 @@ bool PacketHandler::HANDLE_PacketType_CLIENT_LEAVE( const SessionDataRef& sessio
 	job_leave->SetSession( session );
 
 	RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
-	return false;
+	return true;
 }
