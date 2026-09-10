@@ -10,13 +10,16 @@ public:
 	SessionManager();
 	~SessionManager();
 
-	void Initalize( int sessionCount );
+	void Initialize( int sessionCount );
 
 	SessionDataRef PopSession();
 	void PushSession( SessionData* session );
 
 	void InsertWait( AcceptObject* acceptObject );
 	void ReWaiting();
+
+	// 종료 1단계 - 대기 큐에 남은 AcceptObject 정리.
+	void ClearWaitQueue();
 
 	int GetSessionCount();
 	int GetSessionMaxCount() { return m_SessionPools.GetMaxCount(); }

@@ -22,7 +22,7 @@ public:
 		m_buffer.clear();
 	}
 
-	void Initalize( int bufferSize );
+	void Initialize( int bufferSize );
 
 	char* GetReadBuffer();
 	char* GetReadData();

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "RSDefine.h"
-#include "SocketUtill.h"
+#include "SocketUtil.h"
 #include "Buffer.h"
 
 enum class IOCP_TYPE
@@ -73,7 +73,7 @@ public:
 	}
 	virtual ~RecvObject() {}
 
-	void Initalize();
+	void Initialize();
 
 	virtual void Execute( int transferByte ) override;
 	void Clear();
@@ -140,10 +140,12 @@ public:
 	HANDLE GetIOCPHandle() { return m_IOCPHandle;  }
 
 	void Join();
+	void Stop();
 	
 private:
 	HANDLE m_IOCPHandle;
 	vector<thread*> m_vecThread;
 	int m_iThreadCount;
+	atomic<bool> m_Stop;
 };
 

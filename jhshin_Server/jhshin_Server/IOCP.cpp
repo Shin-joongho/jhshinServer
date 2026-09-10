@@ -4,13 +4,14 @@
 #include "ServiceManager.h"
 #include "SessionData.h"
 #include "RoomManager.h"
-#include "SocketUtill.h"
+#include "SocketUtil.h"
 
 IOCP::IOCP()
 {
 	m_IOCPHandle = INVALID_HANDLE_VALUE;
 	m_vecThread.clear();
 	m_iThreadCount = 0;
+	m_Stop = false;
 }
 
 IOCP::IOCP( int iThreadCount )
@@ -20,7 +21,9 @@ IOCP::IOCP( int iThreadCount )
 
 IOCP::~IOCP()
 {
-	
+	m_IOCPHandle = INVALID_HANDLE_VALUE;
+	m_vecThread.clear();
+	m_iThreadCount = 0;
 }
 
 void IOCP::Init( int iThreadCount )
@@ -29,6 +32,8 @@ void IOCP::Init( int iThreadCount )
 
 	m_vecThread.clear();
 	m_vecThread.reserve( m_iThreadCount );
+
+	m_Stop = false;
 
 	m_IOCPHandle = CreateIoCompletionPort( INVALID_HANDLE_VALUE, NULL, 0, 0 );
 
@@ -57,7 +62,7 @@ void IOCP::Worker( IOCP* thisIOCP )
 	LPOVERLAPPED lpOverlapped;
 	ULONG_PTR key = 0;
 	bool QueueResult = false;
-	while( true )
+	while( false == thisIOCP->m_Stop )
 	{
 		lptransferByte = 0;
 		QueueResult = GetQueuedCompletionStatus( thisIOCP->GetIOCPHandle(), &lptransferByte, &key, &lpOverlapped, INFINITE );
@@ -74,7 +79,6 @@ void IOCP::Worker( IOCP* thisIOCP )
 		}
 		else
 		{
-			// 풀반환 필요
 			if( iocpObject->GetType() == IOCP_TYPE::IOCP_TYPE_ACCEPT )
 			{
 				AcceptObject* acceptObject = (AcceptObject*)iocpObject;
@@ -133,6 +137,16 @@ void IOCP::Join()
 	}
 
 	m_vecThread.clear();
+	CloseHandle( m_IOCPHandle );
+}
+
+void IOCP::Stop()
+{
+	m_Stop = true;
+	for( int i = 0; i < m_iThreadCount; ++i )
+	{
+		PostQueuedCompletionStatus( m_IOCPHandle, 0, 0, NULL );
+	}
 }
 
 void AcceptObject::Execute( int transferByte )
@@ -176,9 +190,9 @@ void AcceptObject::Execute( int transferByte )
 }
 
 
-void RecvObject::Initalize()
+void RecvObject::Initialize()
 {
-	m_RecvBuffer.Initalize( PACKET_SIZE );
+	m_RecvBuffer.Initialize( PACKET_SIZE );
 }
 
 void RecvObject::Execute( int transferByte )
@@ -216,7 +230,7 @@ void RecvObject::Execute( int transferByte )
 
 	if( false == session->Recv( transferByte ) )
 	{
-		cout << "PakcetHandler Error " << endl;
+		cout << "Recv Error " << endl;
 		shared_ptr<Job_Leave> job_leave = make_shared<Job_Leave>();
 		job_leave->SetSession( session );
 

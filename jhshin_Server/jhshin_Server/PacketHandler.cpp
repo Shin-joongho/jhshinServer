@@ -19,7 +19,7 @@ bool PacketHandler::Register( PacketType packetType, PacketHandlerFunc func )
 	else
 	{
 		// 중복
-		cout << "PakcetType Duplication : " << (int)packetType << endl;
+		cout << "PacketType Duplication : " << (int)packetType << endl;
 		return false;
 	}
 }

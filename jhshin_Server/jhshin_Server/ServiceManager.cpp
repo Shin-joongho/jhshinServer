@@ -3,24 +3,20 @@
 #include "ListenManager.h"
 #include "SessionManager.h"
 
-#include <chrono>
-#include <cstdio>
-#include <Windows.h>
-
 // 각 호출하는 스레드에서 마지막으로 사용한 SendBuffer를 가지고 요청오면 해당 버퍼에서 청크를 꺼내 사용
 // 각 TLS에 접근하는건 해당 스레드 뿐이니 락 필요없고
 // 풀에서 가져올때만 내부적인 락 사용
 thread_local SendBufferRef LSendBuffer = nullptr;
 
-bool ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount )
+bool ServiceManager::Initialize( int ServiceThreadCount, int ListenThreadCount, int AcceptCount )
 {
 	bool Result = false;
 	ListenManager* listenManager = ListenManager::This();
-	SessionManager::This()->Initalize( 10000 );
+	SessionManager::This()->Initialize( 10000 );
 	m_UserSession.clear();
 	m_iocp.Init( ServiceThreadCount );
 
-	listenManager->Initalize( ListenThreadCount );
+	listenManager->Initialize( ListenThreadCount );
 
 	Result = listenManager->Listen();
 	if( Result )
@@ -28,7 +24,6 @@ bool ServiceManager::Initalize( int ServiceThreadCount, int ListenThreadCount, i
 		Result = listenManager->Accept( AcceptCount );
 	}
 
-	// 테스트용 고정치
 	m_SendBuffer.InitObjectPool( 1024 );
 
 	return Result;
@@ -71,7 +66,10 @@ void ServiceManager::MonitorLoop( ServiceManager* self, int intervalSec )
 
 	while( true )
 	{
-		this_thread::sleep_for( chrono::seconds( intervalSec ) );
+		// sleep_for 대신 종료 이벤트를 기다린다.
+		// 타임아웃이면 평소대로 한 주기가 지난 것이고,
+		// 시그널이면 종료 요청이라 최대 intervalSec 을 기다리지 않고 즉시 깨어난다.
+		const DWORD waitResult = WaitForSingleObject( self->m_MonitorStop, intervalSec * 1000 );
 
 		const ULONGLONG nowCpu = GetProcessCpu100ns();
 		const auto      nowAt = chrono::steady_clock::now();
@@ -106,6 +104,13 @@ void ServiceManager::MonitorLoop( ServiceManager* self, int intervalSec )
 		// 파이프나 파일로 리다이렉트되면 블록 버퍼링이라
 		// 프로세스가 죽을 때 버퍼가 통째로 사라진다.
 		fflush( stdout );
+
+		// 종료 요청이었어도 위에서 한 줄을 찍고 나간다.
+		// 그 마지막 줄이 종료 직후의 세션/청크 잔량이라 드레인 진단에 쓸 수 있다.
+		if( WAIT_OBJECT_0 == waitResult )
+		{
+			break;
+		}
 	}
 }
 
@@ -116,10 +121,33 @@ void ServiceManager::StartMonitor( int intervalSec )
 		return;
 	}
 
-	// 종료 경로가 아직 없으므로 detach 한다.
-	// graceful shutdown 을 넣을 때 종료 플래그와 join 으로 바꿔야 한다.
-	thread monitor( MonitorLoop, this, intervalSec );
-	monitor.detach();
+	// 수동 리셋. StopMonitor 를 두 번 불러도 상태가 흔들리지 않는다.
+	m_MonitorStop = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+	if( nullptr == m_MonitorStop )
+	{
+		cout << "[Error] CreateEvent - Monitor" << endl;
+		return;
+	}
+
+	m_MonitorThread = thread( MonitorLoop, this, intervalSec );
+}
+
+void ServiceManager::StopMonitor()
+{
+	if( nullptr == m_MonitorStop )
+	{
+		return;
+	}
+
+	SetEvent( m_MonitorStop );
+
+	if( m_MonitorThread.joinable() )
+	{
+		m_MonitorThread.join();
+	}
+
+	CloseHandle( m_MonitorStop );
+	m_MonitorStop = nullptr;
 }
 
 void ServiceManager::AddIOCP( SessionData* session )
@@ -160,6 +188,52 @@ void ServiceManager::Join()
 {
 	m_iocp.Join();
 	ListenManager::This()->GetIOCP().Join();
+}
+
+// 종료 시퀀스.
+// 커널이 OVERLAPPED 와 버퍼를 참조하는 동안에는 아무것도 해제할 수 없다.
+// 커널이 놓는 시점은 완료 통지가 도착할 때이고, 그걸 꺼내려면 워커가 살아 있어야 한다.
+// 그래서 워커가 제일 마지막에 죽는다 - 아래 순서는 전부 이 제약에서 나온다.
+void ServiceManager::Shutdown()
+{
+	cout << "[Shutdown] 시작" << endl;
+
+	// 유입 차단
+	ListenManager::This()->Shutdown();
+	SessionManager::This()->ClearWaitQueue();
+
+	// 룸 정지
+	RoomManager::This()->Join();
+
+	// 세션 소켓 닫기
+	vector<SessionDataRef> sessions;
+	{
+		lock_guard<mutex> lockGuard( m_Lock );
+		sessions.reserve( m_UserSession.size() );
+		for( auto& userSession : m_UserSession )
+		{
+			sessions.push_back( userSession.second );
+		}
+	}
+
+	cout << "[Shutdown] 세션 " << sessions.size() << " 개 닫는 중" << endl;
+
+	for( auto& session : sessions )
+	{
+		CloseSession( session );
+	}
+
+	// 워커 종료 신호
+	m_iocp.Stop();
+	ListenManager::This()->GetIOCP().Stop();
+
+	// 워커 회수
+	Join();
+
+	// 모니터 회수
+	StopMonitor();
+
+	cout << "[Shutdown] 완료" << endl;
 }
 
 

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "JobQueue.h"
-#include "SocketUtill.h"
+#include "SocketUtil.h"
 #include "PacketStruct.h"
 
 #include "RSDefine.h"
@@ -16,18 +16,19 @@ public:
 	}
 	~Room() {}
 
-	void StartJob();
+	bool StartJob();
 
 	void PushJob( JobObjectRef jobObject );
 
 	int GetRoomID() { return m_RoomID; }
 	void SetRoomID( int roomID ) { m_RoomID = roomID; }
 
+	void Stop();
+
 public:
 	// 잡에서만 실행될 함수
 	void Enter( SessionDataRef session );
 	void Leave( SessionDataRef session );
-	void LeaveAll();
 	void BroadCast( SessionDataRef broadSession, Client_Broadcast_Req& packet );
 
 private:

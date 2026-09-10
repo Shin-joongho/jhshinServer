@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "SocketUtill.h"
+#include "SocketUtil.h"
 #include "IOCP.h"
 #include "ServiceManager.h"
 #include "PacketHandler.h"

@@ -19,15 +19,6 @@ protected:
 	SessionDataRef m_session = nullptr;
 };
 
-class Job_Echo : public JobObject
-{
-public:
-	virtual void Dispatch( class Room* room ) override;
-
-private:
-	Client_ECHO_Req m_EchoReq;
-};
-
 class Job_Broadcast : public JobObject
 {
 public:

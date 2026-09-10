@@ -151,7 +151,7 @@ void SessionData::CheckSendComplete()
 
 void SessionData::Reset()
 {
-	m_Recv.Initalize();
+	m_Recv.Initialize();
 	m_Socket = INVALID_SOCKET;
 	m_NetAddress.Clear();
 	m_SendFlag = false;

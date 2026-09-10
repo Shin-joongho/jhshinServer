@@ -1,6 +1,6 @@
 ﻿#include "Buffer.h"
 
-void RecvBuffer::Initalize( int bufferSize )
+void RecvBuffer::Initialize( int bufferSize )
 {
     m_buffer.resize( bufferSize, 0 );
 }

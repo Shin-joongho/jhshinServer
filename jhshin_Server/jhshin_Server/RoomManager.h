@@ -11,7 +11,7 @@ public:
 	RoomManager();
 	~RoomManager() {}
 
-	void Initalize( int roomCount );
+	void Initialize( int roomCount );
 	void Release();
 
 	static void Work( RoomRef room );
@@ -24,5 +24,8 @@ private:
 	vector<RoomRef> m_Rooms;
 	vector<shared_ptr<thread>> m_RoomsThread;
 	int m_RoomCount;
+
+	// IOCP 워커가 PushJobByRooms 에서 읽는다.
+	atomic<bool> m_Stop = false;
 };
 

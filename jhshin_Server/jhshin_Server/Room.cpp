@@ -3,7 +3,7 @@
 #include "SessionData.h"
 #include "ServiceManager.h"
 
-void Room::StartJob()
+bool Room::StartJob()
 {
 	queue<JobObjectRef> jobqueue;
 
@@ -17,16 +17,18 @@ void Room::StartJob()
 			jobqueue.pop();
 		}
 
-		if( stop )
-		{
-			return;
-		}
+		return false == stop;
 	}
 }
 
 void Room::PushJob( JobObjectRef jobObject )
 {
 	m_jobQueue.Push( jobObject );
+}
+
+void Room::Stop()
+{
+	m_jobQueue.Stop();
 }
 
 void Room::Enter( SessionDataRef session )
@@ -67,16 +69,12 @@ void Room::Leave( SessionDataRef session )
 	ServiceManager::This()->CloseSession( session );
 }
 
-void Room::LeaveAll()
-{
-}
-
 void Room::BroadCast( SessionDataRef broadSession, Client_Broadcast_Req& packet )
 {
 	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_BROADCAST, ( char* )&packet, sizeof( packet ) );
 	if( get<1>( check ) )
 	{
-		for( auto session : m_roomUser )
+		for( auto& session : m_roomUser )
 		{
 			if( session.second == broadSession )
 			{
