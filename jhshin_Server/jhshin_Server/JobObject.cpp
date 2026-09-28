@@ -15,3 +15,8 @@ void Job_Leave::Dispatch( Room* room )
 {
 	room->Leave( m_session );
 }
+
+void Job_Move::Dispatch( Room* room )
+{
+	room->Move( m_session, m_posX, m_posY );
+}

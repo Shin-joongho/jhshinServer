@@ -102,3 +102,22 @@ bool PacketHandler::HANDLE_PacketType_CLIENT_LEAVE( const SessionDataRef& sessio
 	RoomManager::This()->PushJobByRooms( job_leave, session->GetRoomID() );
 	return true;
 }
+
+bool PacketHandler::HANDLE_PacketType_CLIENT_MOVE( const SessionDataRef& session, const char* bufferData, int bufferSize )
+{
+	Client_Move_Req moveReq;
+	if( nullptr == bufferData || bufferSize != sizeof( moveReq ) )
+	{
+		return false;
+	}
+
+	memcpy( &moveReq, bufferData, bufferSize );
+
+	shared_ptr<Job_Move> job_Move = make_shared<Job_Move>();
+	job_Move->SetSession( session );
+	job_Move->SetMove( moveReq.GetPosX(), moveReq.GetPosY() );
+
+	RoomManager::This()->PushJobByRooms( job_Move, session->GetRoomID() );
+
+	return true;
+}

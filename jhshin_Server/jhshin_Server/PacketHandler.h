@@ -23,7 +23,7 @@ public:
 	static bool HANDLE_PacketType_CLIENT_ENTER( const SessionDataRef& session, const char* bufferData, int bufferSize );
 	static bool HANDLE_PacketType_CLIENT_LEAVE( const SessionDataRef& session, const char* bufferData, int bufferSize );
 
-
+	static bool HANDLE_PacketType_CLIENT_MOVE( const SessionDataRef& session, const char* bufferData, int bufferSize );
 private:
 	inline static PacketHandlerFunc m_PacketHandle[(int)PacketType::PacketType_MAX] = {};
 };

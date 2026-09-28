@@ -39,11 +39,26 @@ public:
 private:
 };
 
-
 class Job_Leave : public JobObject
 {
 public:
 	virtual void Dispatch( class Room* room ) override;
 
 private:
+};
+
+class Job_Move : public JobObject
+{
+public:
+	virtual void Dispatch( class Room* room ) override;
+
+	void SetMove( float posX, float posY )
+	{
+		m_posX = posX;
+		m_posY = posY;
+	}
+
+private:
+	float m_posX;
+	float m_posY;
 };

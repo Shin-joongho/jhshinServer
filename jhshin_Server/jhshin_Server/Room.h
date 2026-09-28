@@ -13,6 +13,11 @@ public:
 	{
 		m_roomUser.clear();
 		m_RoomID = 0;
+
+		for( unsigned int i = 0; i < MaxRoomUserCount; ++i )
+		{
+			m_seqIDs.push( i );
+		}
 	}
 	~Room() {}
 
@@ -31,9 +36,21 @@ public:
 	void Leave( SessionDataRef session );
 	void BroadCast( SessionDataRef broadSession, Client_Broadcast_Req& packet );
 
+	void Move( SessionDataRef session, float posX, float posY );
+
+	void MoveCheckUsers( UINT64 nowTick );
+
 private:
 	JobQueue m_jobQueue;
-	map<SOCKET, SessionDataRef> m_roomUser;
+	map<SOCKET, RoomUser> m_roomUser;
 	int m_RoomID;
+
+	queue<unsigned int> m_seqIDs;
+
+	int m_MaxX = 10000;
+	int m_MaxY = 10000;
+
+	UINT64 lastTick = 0;
+	list<RoomUser*> m_moveUser;
 };
 

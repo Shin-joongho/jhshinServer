@@ -92,6 +92,13 @@ struct SendChunk
 	char* m_buffer;
 	int m_size;
 
+	SendChunk()
+	{
+		m_sendBuffer = nullptr;
+		m_buffer = nullptr;
+		m_size = 0;
+	}
+
 	void Set( SendBufferRef sendBuffer, char* buffer, int size )
 	{
 		m_sendBuffer = sendBuffer;

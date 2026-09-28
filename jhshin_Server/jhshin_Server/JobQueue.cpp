@@ -3,15 +3,12 @@
 bool JobQueue::PopAll( queue<JobObjectRef>& jobqueue )
 {
     unique_lock<mutex> lg( m_Lock );
-    m_cv.wait( lg, [this]() { return m_Stop || m_JobQueue.empty() == false; } );
+    m_cv.wait_for( lg, chrono::microseconds( MinMoveTick ), [this]() { return m_Stop || m_JobQueue.empty() == false; } );
 
-    // 가짜 일어남 확인
-    if( m_JobQueue.empty() )
+    if( false == m_JobQueue.empty() )
     {
-        return m_Stop;
+        m_JobQueue.swap( jobqueue );
     }
-
-    m_JobQueue.swap( jobqueue );
 
     return m_Stop;
 }
