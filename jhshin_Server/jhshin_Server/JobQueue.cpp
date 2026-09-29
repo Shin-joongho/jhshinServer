@@ -3,7 +3,7 @@
 bool JobQueue::PopAll( queue<JobObjectRef>& jobqueue )
 {
     unique_lock<mutex> lg( m_Lock );
-    m_cv.wait_for( lg, chrono::microseconds( MinMoveTick ), [this]() { return m_Stop || m_JobQueue.empty() == false; } );
+    m_cv.wait_for( lg, chrono::milliseconds( MinMoveTick ), [this]() { return m_Stop || m_JobQueue.empty() == false; } );
 
     if( false == m_JobQueue.empty() )
     {

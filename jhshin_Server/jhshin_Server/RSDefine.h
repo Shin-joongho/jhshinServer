@@ -13,11 +13,11 @@
 #include <cstring>
 #include <list>
 
-// namespace때문에 가장 마지막에 include
 using namespace std;
 
 
 using uint16 = unsigned __int16;
+using uint64 = unsigned __int64;
 
 using SessionDataRef = shared_ptr<class SessionData>;
 using SendBufferRef = shared_ptr<class SendBuffer>;
@@ -29,6 +29,7 @@ const int PACKET_SIZE = 4096;
 const int MaxRoomUserCount = 1000;
 const int MaxSendSpawnCount = 100;
 
+const int MaxSendMoveCount = 100;
 const int MinMoveTick = 100; // 0.1초
 const float MoveSpeed = 1.0f;
 
@@ -42,8 +43,8 @@ struct RoomUser
 	bool m_IsMove = false;
 	float m_destPosX = 0.0f;
 	float m_destPosY = 0.0f;
-	UINT64 m_startMoveTick = 0;
-	UINT64 m_endMoveTick = 0;
+	uint64 m_startMoveTick = 0;
+	uint64 m_endMoveTick = 0;
 
 	void Set( SessionDataRef session, float posX, float posY, unsigned int seqID )
 	{

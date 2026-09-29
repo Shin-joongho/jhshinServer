@@ -7,7 +7,6 @@ bool Room::StartJob()
 {
 	queue<JobObjectRef> jobqueue;
 
-	lastTick = GetTickCount64();
 	while( true )
 	{	
 		bool stop = m_jobQueue.PopAll( jobqueue );
@@ -18,7 +17,7 @@ bool Room::StartJob()
 			jobqueue.pop();
 		}
 
-		UINT64 nowTick = GetTickCount64();
+		uint64 nowTick = GetTickCount64();
 		if( lastTick + MinMoveTick <= nowTick )
 		{
 			lastTick = nowTick;
@@ -230,7 +229,16 @@ void Room::Move( SessionDataRef session, float posX, float posY )
 		return;
 	}
 
-	UINT64 nowTick = GetTickCount64();
+	if( 0 > posX || posX >= m_MaxX )
+	{
+		return;
+	}
+	if( 0 > posY || posY >= m_MaxY )
+	{
+		return;
+	}
+
+	uint64 nowTick = GetTickCount64();
 
 	auto roomUser = m_roomUser.find( session->GetSocket() );
 	if( roomUser == m_roomUser.end() )
@@ -240,10 +248,17 @@ void Room::Move( SessionDataRef session, float posX, float posY )
 
 	RoomUser& user = roomUser->second;
 
+	MovePosition( user, nowTick );
+
 	float dx = posX - user.m_posX;
 	float dy = posY - user.m_posY;
 
 	float dist = sqrtf( dx * dx + dy * dy );
+
+	if( dist <= 0 )
+	{
+		return;
+	}
 
 	user.m_IsMove = true;
 
@@ -252,21 +267,87 @@ void Room::Move( SessionDataRef session, float posX, float posY )
 	
 	user.m_startMoveTick = nowTick;
 	user.m_endMoveTick = nowTick + ( dist / MoveSpeed ) * 1000;
-
-	m_moveUser.push_back( &user );
 }
 
-void Room::MoveCheckUsers( UINT64 nowTick )
+void Room::MoveCheckUsers( uint64 nowTick )
 {
-	for( auto moveUser = m_moveUser.begin() ; moveUser != m_moveUser.end(); )
+	Server_Move_Ack packet;
+
+	for( auto& moveUser : m_roomUser )
 	{
-		RoomUser* user = ( *moveUser );
-		if( nullptr == user )
+		RoomUser& user = moveUser.second;
+		if( false == user.m_IsMove )
 		{
-			moveUser = m_moveUser.erase( moveUser );
 			continue;
 		}
 
+		MovePosition( user, nowTick );
 
+		// BroadCast
+		if( false == packet.AddMoveData( user.m_seqID, user.m_posX, user.m_posY ) )
+		{
+			SendMoveData( packet );
+			packet.Clear();
+			packet.AddMoveData( user.m_seqID, user.m_posX, user.m_posY );
+		}
+	}
+
+	if( packet.GetCount() > 0 )
+	{
+		SendMoveData( packet );
+	}
+}
+
+void Room::MovePosition( RoomUser& user, uint64 nowTick )
+{
+	if( false == user.m_IsMove )
+	{
+		return;
+	}
+
+	if( user.m_endMoveTick <= nowTick )
+	{
+		user.m_posX = user.m_destPosX;
+		user.m_posY = user.m_destPosY;
+		user.m_startMoveTick = nowTick;
+		user.m_IsMove = false;
+
+		return;
+	}
+
+	if( user.m_endMoveTick < user.m_startMoveTick )
+	{
+		user.m_IsMove = false;
+		return;
+	}
+
+	uint64 totalTick = user.m_endMoveTick - user.m_startMoveTick;
+	if( totalTick == 0 )
+	{
+		user.m_IsMove = false;
+		return;
+	}
+
+	float ratio = ( float )( nowTick - user.m_startMoveTick ) / ( float )totalTick;
+
+	user.m_posX = user.m_posX + ( user.m_destPosX - user.m_posX ) * ratio;
+	user.m_posY = user.m_posY + ( user.m_destPosY - user.m_posY ) * ratio;
+	user.m_startMoveTick = nowTick;
+
+}
+
+void Room::SendMoveData( Server_Move_Ack& movePacket )
+{
+	tuple<SendChunk, bool> check = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_MOVE, ( char* )&movePacket, movePacket.GetSize() );
+	if( get<1>( check ) )
+	{
+		for( auto& users : m_roomUser )
+		{
+			users.second.m_session->InsertSendQueue( get<0>( check ) );
+		}
+	}
+	else
+	{
+		cout << "[Error] MakeSendPacket - SendBuffer pool exhausted" << endl;
 	}
 }

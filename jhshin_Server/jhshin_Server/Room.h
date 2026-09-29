@@ -38,7 +38,9 @@ public:
 
 	void Move( SessionDataRef session, float posX, float posY );
 
-	void MoveCheckUsers( UINT64 nowTick );
+	void MoveCheckUsers( uint64 nowTick );
+	void MovePosition( RoomUser& user, uint64 nowTick );
+	void SendMoveData( Server_Move_Ack& movePacket );
 
 private:
 	JobQueue m_jobQueue;
@@ -50,7 +52,6 @@ private:
 	int m_MaxX = 10000;
 	int m_MaxY = 10000;
 
-	UINT64 lastTick = 0;
-	list<RoomUser*> m_moveUser;
+	uint64 lastTick = 0;
 };
 

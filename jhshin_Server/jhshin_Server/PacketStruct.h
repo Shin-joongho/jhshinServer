@@ -219,4 +219,57 @@ public:
 	float GetPosY() { return m_posY; }
 };
 
+struct MoveData
+{
+	unsigned int m_seqID;
+	float m_posX;
+	float m_posY;
+};
+
+struct Server_Move_Ack
+{
+private:
+	int m_count = 0;
+	MoveData m_moveDatas[MaxSendMoveCount] = {};
+
+public:
+	bool AddMoveData( unsigned int seqID, float posX, float posY )
+	{
+		if( m_count >= MaxSendMoveCount )
+		{
+			return false;
+		}
+
+		m_moveDatas[m_count].m_seqID = seqID;
+		m_moveDatas[m_count].m_posX = posX;
+		m_moveDatas[m_count].m_posY = posY;
+		++m_count;
+
+		return true;
+	}
+
+	int GetCount() { return m_count; }
+	int GetSize()
+	{
+		return sizeof( m_count ) + ( sizeof( MoveData ) * m_count );
+	}
+
+	MoveData* GetMoveData( int Index )
+	{
+		if( 0 <= Index && Index < m_count )
+		{
+			return &m_moveDatas[Index];
+		}
+
+		return nullptr;
+	}
+
+	void Clear()
+	{
+		m_count = 0;
+		memset( m_moveDatas, 0, sizeof( m_moveDatas ) );
+	}
+
+};
+
 #pragma pack(pop)
