@@ -1,4 +1,4 @@
-#include "Room.h"
+ï»¿#include "Room.h"
 
 #include "SessionData.h"
 #include "ServiceManager.h"
@@ -54,7 +54,7 @@ void Room::Enter( SessionDataRef session )
 
 	if( m_seqIDs.empty() )
 	{
-		// ÃÖ´ë ÀÎ¿ø ÃÊ°ú
+		// ìµœëŒ€ ì¸ì› ì´ˆê³¼
 		packet.Set( -1, 0 );
 		tuple<SendChunk, bool> sendNak = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_ENTER, ( char* )&packet, sizeof( packet ) );
 		if( get<1>( sendNak ) )
@@ -101,7 +101,7 @@ void Room::Enter( SessionDataRef session )
 						tuple<SendChunk, bool> sendEnterSpawn = ServiceManager::This()->MakeSendPacket( PacketType::PacketType_SERVER_SPAWN, ( char* )&enterSpawn, enterSpawn.GetSize() );
 						if( false == get<1>( sendEnterSpawn ) )
 						{
-							// ¿©±â ¹İº¹ÇØ¼­ È®ÀÎÇÏ±â´Â ¾Ö¸ÅÇÏ°í ¿ÀÁö ¾ÊÀ» °¡´É¼º ³ôÀ¸´Ï ±×³É ·Î±×¸¸ ³²±è
+							// ì—¬ê¸° ë°˜ë³µí•´ì„œ í™•ì¸í•˜ê¸°ëŠ” ì• ë§¤í•˜ê³  ì˜¤ì§€ ì•Šì„ ê°€ëŠ¥ì„± ë†’ìœ¼ë‹ˆ ê·¸ëƒ¥ ë¡œê·¸ë§Œ ë‚¨ê¹€
 							cout << "AddSpawnData Error Not Pool" << endl;
 							continue;
 						}
@@ -180,7 +180,7 @@ void Room::Leave( SessionDataRef session )
 				user.second.m_session->InsertSendQueue( get<0>( leaveBroadCast ) );
 			}
 
-			// ¿À·ù°¡ ÀÖÀ»°æ¿ì seq¹İ³³ÇÏÁö ¾ÊÀ½
+			// ì˜¤ë¥˜ê°€ ìˆì„ê²½ìš° seqë°˜ë‚©í•˜ì§€ ì•ŠìŒ
 			m_seqIDs.push( seqID );
 		}
 		else
@@ -191,7 +191,7 @@ void Room::Leave( SessionDataRef session )
 		m_roomUser.erase( session->GetSocket() );
 	}
 
-	// ¾ø¾ú´ø °æ¿ì ±×³É Á¾·á
+	// ì—†ì—ˆë˜ ê²½ìš° ê·¸ëƒ¥ ì¢…ë£Œ
 	ServiceManager::This()->CloseSession( session );
 
 	return;
@@ -225,6 +225,11 @@ void Room::Move( SessionDataRef session, float posX, float posY )
 	}
 
 	if( false == session->IsConnected() )
+	{
+		return;
+	}
+
+	if( false == isfinite( posX ) || false == isfinite( posY ) )
 	{
 		return;
 	}

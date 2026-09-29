@@ -1,4 +1,4 @@
-// jhshin_Server 이동 동기화 검증 - Room / Move 경로
+﻿// jhshin_Server 이동 동기화 검증 - Room / Move 경로
 //
 // 빌드 : cl /nologo /utf-8 /std:c++20 /O2 /EHsc /I <서버소스경로> MoveTest.cpp /Fe:MoveTest.exe ws2_32.lib
 // 실행 : MoveTest.exe
